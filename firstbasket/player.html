@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Player First Basket Record | The Plus Side</title>
+<meta name="description" content="An NBA player's first-basket record: starts, first baskets and every game he started.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="The Plus Side">
+<meta property="og:title" content="Player First Basket Record">
+<meta property="og:description" content="Starts, first baskets and every game he started.">
+<meta property="og:image" content="https://sethb2002.github.io/theplusside/firstbasket/img/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<main class="wrap">
+  <section>
+    <div class="eyebrow" id="sub">Player</div>
+    <h1 id="name">Loading…</h1>
+  </section>
+  <section class="tiles" id="tiles"></section>
+  <section class="card section">
+    <div>
+      <h2>Game log</h2>
+      <p class="note">Every game he started. "Team first" means his team scored the first basket.</p>
+    </div>
+    <div class="scroll tall"><table class="data" id="log"></table></div>
+  </section>
+</main>
+<script src="../assets/app.js" data-page="players" data-root=".."></script>
+<script>
+(async () => {
+  const { el, pct, int, load, dateLabel } = TPS;
+  TPS.header();
+  const id = new URLSearchParams(location.search).get("id") || "";
+  const nameEl = document.getElementById("name");
+  let d, stats;
+  try {
+    [d, stats] = await Promise.all([
+      fetch(`data/p/${encodeURIComponent(id)}.json`).then((r) => { if (!r.ok) throw 0; return r.json(); }),
+      load("stats"),
+    ]);
+  } catch (e) {
+    nameEl.textContent = "Player not found";
+    return;
+  }
+  const names = stats.team_names || {};
+  const all = d.seasons.filter((s) => s.season === "All").sort((a, b) => b.starts - a.starts);
+  const latest = d.log[0];
+  const main = all.find((s) => s.team === latest[1]) || all[0];
+  nameEl.textContent = main.name;
+  document.title = `${main.name} First Basket Record | The Plus Side`;
+  document.getElementById("sub").textContent = `${main.pos || ""} · ${names[latest[1]] || latest[1]}`;
+  const tot = { starts: 0, fb: 0, team_fb: 0 };
+  for (const s of all) { tot.starts += s.starts; tot.fb += s.fb; tot.team_fb += s.team_fb; }
+  const cur = d.seasons.filter((s) => s.season === stats.seasons[stats.seasons.length - 1]);
+  const curFb = cur.reduce((a, s) => a + s.fb, 0), curSt = cur.reduce((a, s) => a + s.starts, 0);
+  const tile = (label, value, sub) => el("div", { class: "card tile" }, el("div", { class: "label", text: label }), el("div", { class: "big", text: value }), sub ? el("div", { class: "sub", text: sub }) : null);
+  document.getElementById("tiles").replaceChildren(
+    tile("First baskets", int(tot.fb), `in ${int(tot.starts)} starts`),
+    tile("Per start", pct(tot.starts ? tot.fb / tot.starts : null, 1)),
+    tile("Share of team's first baskets", pct(tot.team_fb ? tot.fb / tot.team_fb : null), "in games he started"),
+    tile("This season", `${curFb} of ${curSt}`, "first baskets / starts"),
+  );
+  const rows = d.log.map(([date, team, opp, ha, teamFirst, heFirst, scorer]) => ({ date, team, opp, ha, teamFirst, heFirst, scorer }));
+  const chip = (on, yes, no) => el("span", { class: "chip " + (on ? "hit" : "pending"), text: on ? yes : no });
+  TPS.table(document.getElementById("log"), rows, [
+    { k: "date", label: "Date", left: true, render: (r) => dateLabel(r.date, { month: "short", day: "numeric", year: "numeric" }) },
+    { k: "opp", label: "Opponent", left: true, render: (r) => `${r.team} ${r.ha === "H" ? "vs" : "at"} ${r.opp}` },
+    { k: "teamFirst", label: "Team first", render: (r) => chip(r.teamFirst, "Yes", "No") },
+    { k: "heFirst", label: "He scored first", render: (r) => chip(r.heFirst, "Yes", "No") },
+    { k: "scorer", label: "First basket by", left: true, render: (r) => r.scorer || "Opponent" },
+  ]);
+  TPS.footer(stats.updated);
+})();
+</script>
+</body>
+</html>

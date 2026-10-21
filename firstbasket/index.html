@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Today's First Basket Picks | The Plus Side</title>
+<meta name="description" content="Who scores the first basket tonight? Daily NBA first-basket odds for every game and starter, built from every tip-off and first bucket of the last two seasons.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="The Plus Side">
+<meta property="og:title" content="Today's NBA First Basket Picks">
+<meta property="og:description" content="Every game's chance to score first and the top first-basket picks, updated each morning.">
+<meta property="og:url" content="https://sethb2002.github.io/theplusside/firstbasket/">
+<meta property="og:image" content="https://sethb2002.github.io/theplusside/firstbasket/img/picks-today.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<main class="wrap">
+  <section class="hero">
+    <div>
+      <div class="eyebrow">NBA first basket</div>
+      <h1 id="headline">Today's picks</h1>
+      <p class="lede">Each game's chance to score the first basket, and the starters most likely to hit it. Built from every tip-off and first bucket since the start of last season.</p>
+    </div>
+    <div class="record" id="record" aria-label="Track record"></div>
+  </section>
+
+  <section class="section" id="slate">
+    <div class="grid" id="games"><div class="empty">Loading today's games…</div></div>
+  </section>
+
+  <section class="section" id="results">
+    <div class="section-head">
+      <div>
+        <h2 id="results-title">Recent results</h2>
+        <p class="note">Picks are saved before tip-off and never changed. Team pick hits when our favorite scores first. Top pick hits when our number-one player scores the first basket.</p>
+      </div>
+    </div>
+    <div class="card scroll"><table class="data" id="results-table"></table></div>
+  </section>
+</main>
+
+<script src="../assets/app.js" data-page="today" data-root=".."></script>
+<script>
+(async () => {
+  const { el, pct, load, dateLabel, time12, playerLink } = TPS;
+  TPS.header();
+  let today, results, stats;
+  try {
+    [today, results, stats] = await Promise.all([load("today"), load("results"), load("stats")]);
+  } catch (e) {
+    document.getElementById("games").replaceChildren(el("div", { class: "empty", text: "Couldn't load today's data. Refresh to try again." }));
+    return;
+  }
+  const names = stats.team_names || {};
+  document.getElementById("headline").textContent = `Picks for ${dateLabel(today.date)}`;
+
+  // Track record pills
+  const rec = document.getElementById("record");
+  const pill = (label, a, n) => el("span", { class: "pill" }, label, el("b", { text: n ? `${a}–${n - a}` : "–" }));
+  const r7 = results.last7, all = results.overall;
+  if (all.n) {
+    rec.append(
+      pill("Team picks, last 7 days", r7.team, r7.n),
+      el("span", { class: "pill" }, "Top-3 player hit rate", el("b", { text: pct(all.top3 / all.n) })),
+    );
+  } else {
+    rec.append(el("span", { class: "pill" }, "Track record starts after tonight's games"));
+  }
+
+  // Game cards
+  const box = document.getElementById("games");
+  if (!today.games.length) {
+    box.replaceChildren(el("div", { class: "empty", text: "No NBA games today. Check back tomorrow." }));
+  } else {
+    box.replaceChildren(...today.games.map((g, i) => {
+      const A = g.sides[g.away], H = g.sides[g.home];
+      const lineup = (team, s) => el("div", {},
+        el("div", { class: "subhead", text: `${team} likely starters` }),
+        el("ul", { class: "picks" }, s.players.map((p) =>
+          el("li", {}, el("span", { class: "rank", text: p.pos || "" }),
+            el("span", { class: "who" }, playerLink(p.id, p.name)),
+            el("span", { class: "pct", text: pct(p.p, 1) })))));
+      const card = el("article", { class: "card game", style: `animation-delay:${Math.min(i, 10) * 40}ms` },
+        el("div", { class: "game-top" }, el("span", { text: time12(g.time_et) }),
+          el("a", { href: `matchup.html?away=${g.away}&home=${g.home}`, text: "Full matchup" })),
+        el("div", { class: "matchline" },
+          el("div", { class: "t" + (g.fav === g.away ? " fav" : ""), title: names[g.away] || g.away }, g.away,
+            el("span", { class: "p", text: `${pct(A.p_first)} first` })),
+          el("span", { class: "at", text: "at" }),
+          el("div", { class: "t home" + (g.fav === g.home ? " fav" : ""), title: names[g.home] || g.home }, g.home,
+            el("span", { class: "p", text: `${pct(H.p_first)} first` }))),
+        el("div", { class: "split", role: "img", "aria-label": `${g.away} ${pct(A.p_first)}, ${g.home} ${pct(H.p_first)} to score first` },
+          el("span", { class: g.fav === g.away ? "fav" : "a", style: `width:${A.p_first * 100}%` }),
+          el("span", { class: g.fav === g.home ? "fav" : "a", style: `width:${H.p_first * 100}%` })),
+        el("div", { class: "tipline" }, el("span", { text: `Tip ${pct(A.p_tip)}` }), el("span", { text: `Tip ${pct(H.p_tip)}` })),
+        el("div", {}, el("div", { class: "subhead", text: "Top first-basket picks" }),
+          el("ol", { class: "picks" }, g.picks.map((p, j) =>
+            el("li", {}, el("span", { class: "rank", text: j + 1 }),
+              el("span", { class: "who" }, playerLink(p.id, p.name), el("small", { text: p.team })),
+              el("span", { class: "pct", text: pct(p.p, 1) }))))),
+        el("details", { class: "more" }, el("summary", { text: "All starters" }),
+          el("div", { class: "lineups" }, lineup(g.away, A), lineup(g.home, H))));
+      return card;
+    }));
+  }
+
+  // Results table
+  const rows = results.games.slice(0, 40);
+  const title = document.getElementById("results-title");
+  if (!rows.length) {
+    document.getElementById("results-table").replaceWith(el("div", { class: "empty", text: "Results show up here the morning after the first slate of picks." }));
+  } else {
+    title.textContent = results.latest_date ? `Results: ${dateLabel(results.latest_date, { month: "short", day: "numeric" })} and earlier` : "Recent results";
+    const chip = (hit) => el("span", { class: "chip " + (hit ? "hit" : "miss"), text: hit ? "Hit" : "Miss" });
+    TPS.table(document.getElementById("results-table"), rows, [
+      { k: "date", label: "Date", left: true, render: (r) => dateLabel(r.date, { month: "short", day: "numeric" }) },
+      { k: "game", label: "Game", left: true, render: (r) => `${r.away} at ${r.home}` },
+      { k: "fav", label: "Our team", left: true, render: (r) => `${r.fav} ${pct(r.fav_p)}` },
+      { k: "team_hit", label: "", render: (r) => chip(r.team_hit) },
+      { k: "top", label: "Our top pick", left: true, render: (r) => `${r.top} ${pct(r.top_p, 1)}` },
+      { k: "top3_hit", label: "Top 3", render: (r) => chip(r.top3_hit) },
+      { k: "actual_player", label: "First basket", left: true, render: (r) => `${r.actual_player} (${r.actual_team})` },
+      { k: "shot", label: "Shot", left: true },
+    ]);
+  }
+  TPS.footer(today.updated);
+})();
+</script>
+</body>
+</html>

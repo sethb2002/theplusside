@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Team Tip-Off and First Basket Rates | The Plus Side</title>
+<meta name="description" content="How often each NBA team wins the opening tip and scores first, and which positions score first against them.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="The Plus Side">
+<meta property="og:title" content="NBA Team Tip-Off and First Basket Rates">
+<meta property="og:description" content="Tip-win rates, first-score rates and first baskets allowed by position for every team.">
+<meta property="og:image" content="https://sethb2002.github.io/theplusside/firstbasket/img/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<main class="wrap">
+  <section class="section-head">
+    <div>
+      <div class="eyebrow">Teams</div>
+      <h1>Tip-offs and first baskets</h1>
+      <p class="lede">How often each team wins the opening tip and scores first, and who scores first against it.</p>
+    </div>
+    <div class="controls"><label for="season">Season</label><select id="season"></select></div>
+  </section>
+  <section class="tiles" id="tiles"></section>
+  <section class="card section">
+    <h2>Tip and first score</h2>
+    <div class="scroll tall"><table class="data" id="t1"></table></div>
+  </section>
+  <section class="card section">
+    <div>
+      <h2>First baskets allowed, by position</h2>
+      <p class="note">When the opponent scores first, which position scored it. Shaded cells are above the league rate for that position.</p>
+    </div>
+    <div class="scroll tall"><table class="data" id="t2"></table></div>
+  </section>
+</main>
+<script src="../assets/app.js" data-page="teams" data-root=".."></script>
+<script>
+(async () => {
+  const { el, pct, int, load } = TPS;
+  TPS.header();
+  const stats = await load("stats");
+  const names = stats.team_names || {};
+  const seasonSel = document.getElementById("season");
+  seasonSel.replaceChildren(...stats.seasons.map((s) => new Option(s === "All" ? "All seasons" : s, s)));
+  const s1 = { k: "first_pct", dir: -1 }, s2 = { k: "team", dir: 1 };
+  const POS = ["PG", "SG", "SF", "PF", "C"];
+  const draw = () => {
+    const s = seasonSel.value, lg = stats.league[s];
+    const tile = (label, value, sub) => el("div", { class: "card tile" }, el("div", { class: "label", text: label }), el("div", { class: "big", text: value }), sub ? el("div", { class: "sub", text: sub }) : null);
+    document.getElementById("tiles").replaceChildren(
+      tile("Games", int(lg.games)),
+      tile("Tip winner scores first", pct(lg.tip_team_first, 1)),
+      tile("Home team scores first", pct(lg.home_first, 1)),
+      tile("First basket is a three", pct(lg.three_share, 1)),
+      tile("Typical first basket", lg.median_seconds == null ? "–" : `${Math.round(lg.median_seconds)}s`, "median seconds into the game"),
+    );
+    const rows = stats.teams.filter((t) => t.season === s);
+    const teamCell = (r) => el("span", { title: names[r.team] || "" , text: r.team });
+    TPS.table(document.getElementById("t1"), rows, [
+      { k: "team", label: "Team", left: true, text: true, render: teamCell },
+      { k: "games", label: "Games" },
+      { k: "tip_win_pct", label: "Wins tip", render: (r) => pct(r.tip_win_pct) },
+      { k: "first_pct", label: "Scores first", render: (r) => pct(r.first_pct) },
+      { k: "first_after_tip_win", label: "After winning tip", render: (r) => pct(r.first_after_tip_win) },
+      { k: "first_after_tip_loss", label: "After losing tip", render: (r) => pct(r.first_after_tip_loss) },
+    ], s1, draw);
+    const shade = (pos) => (td, r) => {
+      const v = r["allow_" + pos], base = lg["pos_" + pos];
+      const lift = v == null || base == null ? 0 : Math.max(0, Math.min(1, (v - base) / 0.15));
+      td.style.background = lift ? `color-mix(in srgb, var(--accent) ${Math.round(lift * 38)}%, transparent)` : "";
+    };
+    TPS.table(document.getElementById("t2"), rows, [
+      { k: "team", label: "Team", left: true, text: true, render: teamCell },
+      { k: "allowed", label: "Allowed", render: (r) => int(r.allowed) },
+      ...POS.map((p) => ({ k: "allow_" + p, label: p, render: (r) => pct(r["allow_" + p]), style: shade(p) })),
+    ], s2, draw);
+  };
+  seasonSel.addEventListener("change", draw);
+  draw();
+  TPS.footer(stats.updated);
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>First Basket Matchup Tool | The Plus Side</title>
+<meta name="description" content="Pick any two NBA teams and see each side's chance to win the tip, score first, and which starter is most likely to hit the first basket.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="The Plus Side">
+<meta property="og:title" content="NBA First Basket Matchup Tool">
+<meta property="og:description" content="Any two teams: tip chances, first-score chances and the top first-basket picks.">
+<meta property="og:image" content="https://sethb2002.github.io/theplusside/firstbasket/img/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+  .sides { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(min(100%, 24rem), 1fr)); }
+  .side-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; flex-wrap: wrap; }
+  .side-head .t { font-family: var(--font-display); font-weight: 700; font-size: 2rem; line-height: 1; }
+  .side-head .full { color: var(--muted); font-size: .9rem; }
+  .side-head .big { font-family: var(--font-display); font-weight: 700; font-size: 2.6rem; line-height: 1; text-align: right; font-variant-numeric: tabular-nums; }
+  .side-head .big small { display: block; font-family: var(--font-body); font-size: .8rem; color: var(--muted); font-weight: 500; }
+  .side.fav .big { color: var(--accent); }
+</style>
+</head>
+<body>
+<main class="wrap">
+  <section class="section-head">
+    <div>
+      <div class="eyebrow">Matchup tool</div>
+      <h1>Any two teams</h1>
+      <p class="lede">Each side's chance to win the opening tip, to score the first basket, and each likely starter's chance to hit it.</p>
+    </div>
+    <div class="controls">
+      <label for="away">Away</label><select id="away"></select>
+      <label for="home">Home</label><select id="home"></select>
+    </div>
+  </section>
+  <section class="sides" id="sides"><div class="empty">Loading…</div></section>
+  <p class="note">Likely starters are the five players who started most of the team's recent games, so injuries and trades show up once a player misses or makes a start. <a href="about.html">How the numbers work</a>.</p>
+</main>
+
+<script src="../assets/app.js" data-page="matchup" data-root=".."></script>
+<script>
+(async () => {
+  const { el, pct, load, playerLink } = TPS;
+  TPS.header();
+  const [m, stats] = await Promise.all([load("matchups"), load("stats")]);
+  const names = stats.team_names || {};
+  const allTeams = stats.teams.filter((t) => t.season === "All");
+  const byTeam = Object.fromEntries(allTeams.map((t) => [t.team, t]));
+  const teams = allTeams.map((t) => t.team).sort();
+  const q = new URLSearchParams(location.search);
+  const awaySel = document.getElementById("away"), homeSel = document.getElementById("home");
+  for (const s of [awaySel, homeSel]) s.replaceChildren(...teams.map((t) => new Option(names[t] ? `${t} – ${names[t]}` : t, t)));
+  awaySel.value = teams.includes(q.get("away")) ? q.get("away") : teams[0];
+  homeSel.value = teams.includes(q.get("home")) ? q.get("home") : teams[1];
+
+  const side = (team, opp, isFav) => {
+    const p = m.pairs[`${team}-${opp}`];
+    const five = (m.lineups[team] || []).map((pl, i) => ({ ...pl, p: p.players[i], share: p.shares[i] })).sort((a, b) => b.p - a.p);
+    const oppRow = byTeam[opp] || {};
+    const t = el("table", { class: "data" });
+    TPS.table(t, five, [
+      { k: "name", label: "Likely starter", left: true, render: (r) => playerLink(r.id, r.name) },
+      { k: "pos", label: "Pos", left: true },
+      { k: "share", label: "Share of team", render: (r) => pct(r.share) },
+      { k: "p", label: "First basket", render: (r) => pct(r.p, 1) },
+      { k: "allow", label: `${opp} allows to pos`, render: (r) => pct(oppRow["allow_" + r.pos]) },
+    ]);
+    return el("article", { class: "card side" + (isFav ? " fav" : "") },
+      el("div", { class: "side-head" },
+        el("div", {}, el("div", { class: "t", text: team }), el("div", { class: "full", text: names[team] || "" }),
+          el("div", { class: "note", text: `Wins the tip ${pct(p.p_tip)} · scores first after winning it ${pct(byTeam[team].first_after_tip_win)}` })),
+        el("div", { class: "big" }, pct(p.p_first, 1), el("small", { text: "scores first" }))),
+      el("div", { class: "scroll", style: "margin-top:.9rem" }, t));
+  };
+
+  const draw = () => {
+    const a = awaySel.value, h = homeSel.value;
+    history.replaceState(null, "", `?away=${a}&home=${h}`);
+    const box = document.getElementById("sides");
+    if (a === h) { box.replaceChildren(el("div", { class: "empty", text: "Pick two different teams." })); return; }
+    const pa = m.pairs[`${a}-${h}`].p_first, ph = m.pairs[`${h}-${a}`].p_first;
+    box.replaceChildren(side(a, h, pa >= ph), side(h, a, ph > pa));
+  };
+  awaySel.addEventListener("change", draw);
+  homeSel.addEventListener("change", draw);
+  draw();
+  TPS.footer(m.updated);
+})();
+</script>
+</body>
+</html>

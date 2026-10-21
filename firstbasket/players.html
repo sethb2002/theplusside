@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>First Basket Leaders | The Plus Side</title>
+<meta name="description" content="Every NBA starter's first-basket record: starts, first baskets, rate per start and share of his team's first baskets.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="The Plus Side">
+<meta property="og:title" content="NBA First Basket Leaders">
+<meta property="og:description" content="Who scores the first basket most often? Every starter, sortable.">
+<meta property="og:image" content="https://sethb2002.github.io/theplusside/firstbasket/img/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<main class="wrap">
+  <section>
+    <div class="eyebrow">Players</div>
+    <h1>First basket leaders</h1>
+    <p class="lede">Every starter, by team. Share is his first baskets divided by all of his team's first baskets in games he started.</p>
+  </section>
+  <section class="card section">
+    <div class="controls">
+      <label for="season">Season</label><select id="season"></select>
+      <label for="minstarts">Min. starts</label>
+      <select id="minstarts"><option value="1">1</option><option value="10" selected>10</option><option value="25">25</option><option value="50">50</option></select>
+      <input type="search" id="q" placeholder="Search player or team" aria-label="Search players">
+    </div>
+    <div class="scroll tall"><table class="data" id="t"></table></div>
+  </section>
+</main>
+<script src="../assets/app.js" data-page="players" data-root=".."></script>
+<script>
+(async () => {
+  const { pct, int, load, playerLink } = TPS;
+  TPS.header();
+  const stats = await load("stats");
+  const seasonSel = document.getElementById("season"), minSel = document.getElementById("minstarts"), q = document.getElementById("q");
+  seasonSel.replaceChildren(...stats.seasons.map((s) => new Option(s === "All" ? "All seasons" : s, s)));
+  const state = { k: "fb", dir: -1 };
+  const draw = () => {
+    const s = seasonSel.value, min = Number(minSel.value), text = q.value.trim().toLowerCase();
+    const rows = stats.players.filter((p) => p.season === s && p.starts >= min && (!text || (p.name + " " + p.team).toLowerCase().includes(text)));
+    TPS.table(document.getElementById("t"), rows, [
+      { k: "name", label: "Player", left: true, text: true, render: (r) => playerLink(r.id, r.name) },
+      { k: "team", label: "Team", left: true, text: true },
+      { k: "pos", label: "Pos", left: true, text: true },
+      { k: "starts", label: "Starts", render: (r) => int(r.starts) },
+      { k: "fb", label: "First baskets", render: (r) => int(r.fb) },
+      { k: "fb_rate", label: "Per start", render: (r) => pct(r.fb_rate, 1) },
+      { k: "share", label: "Share of team", render: (r) => pct(r.share) },
+    ], state, draw);
+  };
+  for (const c of [seasonSel, minSel]) c.addEventListener("change", draw);
+  q.addEventListener("input", draw);
+  draw();
+  TPS.footer(stats.updated);
+})();
+</script>
+</body>
+</html>

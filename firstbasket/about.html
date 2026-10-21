@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>How the First Basket Picks Work | The Plus Side</title>
+<meta name="description" content="Where the data comes from and how The Plus Side estimates tip-off and first-basket chances.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="The Plus Side">
+<meta property="og:title" content="How the First Basket Picks Work">
+<meta property="og:image" content="https://sethb2002.github.io/theplusside/firstbasket/img/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<main class="wrap">
+  <article class="prose">
+    <div class="eyebrow">How it works</div>
+    <h1>How the picks work</h1>
+
+    <h2>The data</h2>
+    <p>Every regular-season game since the start of the 2025-26 season, taken from the NBA's own play-by-play: who jumped at center, which team got the ball, who made the first field goal, and both starting lineups. New games are added every morning.</p>
+    <p>"First basket" means the first made field goal. Free throws don't count.</p>
+
+    <h2>Who scores first</h2>
+    <p>The team that wins the opening tip scores the first basket about 64% of the time, so the estimate starts with the tip.</p>
+    <ol>
+      <li><strong>Tip chance.</strong> Each team's tip-win rate, compared head to head.</li>
+      <li><strong>After the tip.</strong> How often a team scores first after winning the tip and after losing it, blended with how often its opponent allows the first basket in the same situation.</li>
+      <li><strong>Small samples.</strong> Every team's record is padded with 10 games of league-average results, so one hot week doesn't swing the numbers.</li>
+    </ol>
+
+    <h2>Which player</h2>
+    <p>A player's chance is his team's chance to score first times his share of the team's first baskets in games he started. Every player gets a head start of one fifth, so a new starter isn't treated as a zero.</p>
+    <p>Likely starters are the five players who started most of the team's recent games. Injuries, rest days and trades show up only once they change who starts, so check the news before tip-off.</p>
+
+    <h2>The track record</h2>
+    <p>Picks are saved the morning of each game, before tip-off, and never edited. Results are graded the next morning and stay on the page, hits and misses alike.</p>
+
+    <h2>Fine print</h2>
+    <p>This is a stats project for entertainment. It isn't betting advice, and no estimate here is a guarantee. If you bet, bet only what you can afford to lose.</p>
+  </article>
+</main>
+<script src="../assets/app.js" data-page="about" data-root=".."></script>
+<script>TPS.header(); TPS.load("stats").then((s) => TPS.footer(s.updated)).catch(() => TPS.footer());</script>
+</body>
+</html>
