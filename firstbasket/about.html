@@ -29,7 +29,7 @@
     <h2>Who scores first</h2>
     <p>The team that wins the opening tip scores the first basket about 64% of the time, so the estimate starts with the tip.</p>
     <ol>
-      <li><strong>Tip chance.</strong> Each team's tip-win rate, compared head to head.</li>
+      <li><strong>Tip chance.</strong> The opening tip is won by a player, so the model compares the two likely jumpers' jump-ball records, usually the starting centers. A player's record follows him to a new team. Jump records are padded with 6 jumps at 50% so a few tips don't swing them.</li>
       <li><strong>After the tip.</strong> How often a team scores first after winning the tip and after losing it, blended with how often its opponent allows the first basket in the same situation.</li>
       <li><strong>Small samples.</strong> Every team's record is padded with 10 games of league-average results, so one hot week doesn't swing the numbers.</li>
     </ol>

@@ -43,6 +43,7 @@ const TPS = (() => {
       ["matchup", "Matchup", `${root}/firstbasket/matchup.html`],
       ["players", "Players", `${root}/firstbasket/players.html`],
       ["teams", "Teams", `${root}/firstbasket/teams.html`],
+      ["jumpball", "Jump balls", `${root}/firstbasket/jumpball.html`],
       ["about", "How it works", `${root}/firstbasket/about.html`],
     ];
     const bar = el("header", { class: "bar" },
@@ -107,5 +108,7 @@ const TPS = (() => {
     if (!sorted.length) tbody.append(el("tr", {}, el("td", { class: "l", colspan: cols.length, text: "No matches." })));
   }
 
-  return { SITE, load, pct, int, el, dateLabel, time12, playerLink, header, footer, table, root };
+  const shortName = (n) => { const p = (n || "").split(" "); return p.length > 1 ? `${p[0][0]}. ${p.slice(1).join(" ")}` : n || ""; };
+
+  return { SITE, load, pct, int, el, dateLabel, time12, playerLink, header, footer, table, root, shortName };
 })();

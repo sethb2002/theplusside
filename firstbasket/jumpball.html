@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>NBA Jump Ball Leaders | The Plus Side</title>
+<meta name="description" content="Who wins the opening tip? Every NBA jumper's jump-ball record, from every game since the start of the 2025-26 season.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="The Plus Side">
+<meta property="og:title" content="NBA Jump Ball Leaders">
+<meta property="og:description" content="Who wins the opening tip? Every jumper's record.">
+<meta property="og:image" content="https://sethb2002.github.io/theplusside/firstbasket/img/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+  .bar-cell { display: inline-flex; align-items: center; gap: .5rem; justify-content: flex-end; }
+  .bar-cell .track { width: 5rem; height: .45rem; border-radius: 999px; background: var(--bar-other); overflow: hidden; }
+  .bar-cell .fill { display: block; height: 100%; background: var(--accent); }
+</style>
+</head>
+<body>
+<main class="wrap">
+  <section>
+    <div class="eyebrow">Jump balls</div>
+    <h1>Who wins the opening tip</h1>
+    <p class="lede">Every player who jumped at center, with his record on opening tips. The team that wins the tip scores the first basket about <span id="tipfirst">64%</span> of the time, so the jumper matters.</p>
+  </section>
+  <section class="card section">
+    <div class="controls">
+      <label for="season">Season</label><select id="season"></select>
+      <label for="minj">Min. jumps</label>
+      <select id="minj"><option value="1">1</option><option value="5">5</option><option value="15" selected>15</option><option value="30">30</option></select>
+      <input type="search" id="q" placeholder="Search player or team" aria-label="Search jumpers">
+    </div>
+    <div class="scroll tall"><table class="data" id="t"></table></div>
+    <p class="note">Team is the team he last jumped for. Opening tips only; jump balls later in games don't count.</p>
+  </section>
+</main>
+<script src="../assets/app.js" data-page="jumpball" data-root=".."></script>
+<script>
+(async () => {
+  const { el, pct, int, load, playerLink } = TPS;
+  TPS.header();
+  const stats = await load("stats");
+  document.getElementById("tipfirst").textContent = pct(stats.league.All.tip_team_first);
+  const seasonSel = document.getElementById("season"), minSel = document.getElementById("minj"), q = document.getElementById("q");
+  seasonSel.replaceChildren(...stats.seasons.map((s) => new Option(s === "All" ? "All seasons" : s, s)));
+  const state = { k: "pct", dir: -1 };
+  const draw = () => {
+    const s = seasonSel.value, min = Number(minSel.value), text = q.value.trim().toLowerCase();
+    const rows = (stats.jumpers || []).filter((r) => r.season === s && r.jumps >= min && (!text || (r.name + " " + r.team).toLowerCase().includes(text)));
+    TPS.table(document.getElementById("t"), rows, [
+      { k: "name", label: "Player", left: true, text: true, render: (r) => playerLink(r.id, r.name) },
+      { k: "team", label: "Team", left: true, text: true },
+      { k: "jumps", label: "Tips", render: (r) => int(r.jumps) },
+      { k: "wins", label: "Won", render: (r) => int(r.wins) },
+      { k: "pct", label: "Win rate", render: (r) => el("span", { class: "bar-cell" },
+          el("span", { class: "track", "aria-hidden": "true" }, el("span", { class: "fill", style: `width:${r.pct * 100}%` })),
+          pct(r.pct)) },
+    ], state, draw);
+  };
+  for (const c of [seasonSel, minSel]) c.addEventListener("change", draw);
+  q.addEventListener("input", draw);
+  draw();
+  TPS.footer(stats.updated);
+})();
+</script>
+<script data-goatcounter="https://theplusside.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
+</body>
+</html>

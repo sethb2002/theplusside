@@ -97,7 +97,9 @@
         el("div", { class: "split", role: "img", "aria-label": `${g.away} ${pct(A.p_first)}, ${g.home} ${pct(H.p_first)} to score first` },
           el("span", { class: g.fav === g.away ? "fav" : "a", style: `width:${A.p_first * 100}%` }),
           el("span", { class: g.fav === g.home ? "fav" : "a", style: `width:${H.p_first * 100}%` })),
-        el("div", { class: "tipline" }, el("span", { text: `Tip ${pct(A.p_tip)}` }), el("span", { text: `Tip ${pct(H.p_tip)}` })),
+        el("div", { class: "tipline" },
+          el("span", { text: `Tip ${pct(A.p_tip)}${A.jumper ? " · " + TPS.shortName(A.jumper.name) : ""}` }),
+          el("span", { text: `${H.jumper ? TPS.shortName(H.jumper.name) + " · " : ""}Tip ${pct(H.p_tip)}` })),
         el("div", {}, el("div", { class: "subhead", text: "Top first-basket picks" }),
           el("ol", { class: "picks" }, g.picks.map((p, j) =>
             el("li", {}, el("span", { class: "rank", text: j + 1 }),
