@@ -61,9 +61,29 @@
   .parlay-sum span { color: var(--muted); font-size: .75rem; }
   .parlay-sum input { width: 6.5rem; font: inherit; text-align: right; padding: .3rem .5rem; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); color: var(--ink); }
   .linkbtn { all: unset; cursor: pointer; color: var(--accent); font-size: .85rem; font-weight: 500; }
+  .target { width: 6rem; font: inherit; text-align: right; padding: .35rem .5rem; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); color: var(--ink); font-variant-numeric: tabular-nums; }
+  .target.bad { border-color: var(--miss); }
+  .frow { display: grid; grid-template-columns: minmax(0, 1fr) 3rem 3.6rem 3.8rem 4.4rem 6rem 2.2rem; gap: .45rem; align-items: center; padding-block: .45rem; border-top: 1px solid var(--line); }
+  .frow.head { border-top: 0; padding-block: 0; color: var(--muted); font-size: .72rem; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; }
+  .frow .name { min-width: 0; }
+  .frow .name a { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .frow .name small { display: block; color: var(--muted); font-size: .75rem; }
+  .frow .num { text-align: right; font-variant-numeric: tabular-nums; }
+  .frow .num small { display: block; color: var(--muted); font-size: .72rem; }
+  .frow .line { font-family: var(--font-display); font-weight: 700; font-size: 1.15rem; text-align: center; }
+  .frow .edgeup { color: var(--plus); font-weight: 600; }
+  .frow input[type="text"] { width: 100%; font: inherit; font-size: .95rem; text-align: right; padding: .3rem .45rem; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); color: var(--ink); font-variant-numeric: tabular-nums; }
+  .frow input.bad { border-color: var(--miss); }
+  .addleg { all: unset; cursor: pointer; text-align: center; font-weight: 700; font-size: 1.1rem; color: var(--accent); border: 1px solid var(--line); border-radius: 8px; padding: .15rem 0; }
+  .addleg[aria-pressed="true"] { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .addleg:focus-visible { outline: 2px solid var(--accent); }
   @media (max-width: 560px) {
     .trow { grid-template-columns: 1.3rem minmax(0, 1fr) 3.5rem 3.9rem 4.6rem; gap: .35rem; }
     .trow .col-exp, .trow .pctx { display: none; }
+    .frow { grid-template-columns: minmax(0, 1fr) 2rem 3rem 3.7rem 4.4rem 1.8rem; gap: .3rem; }
+    .frow .verdict { font-size: .72rem; }
+    .frow input[type="text"] { font-size: .85rem; padding: .3rem .35rem; }
+    .frow .col-edge { display: none; }
     .parlay { padding: .6rem .8rem calc(.6rem + env(safe-area-inset-bottom, 0px)); }
     .parlay ul { flex-wrap: nowrap; overflow-x: auto; margin: .35rem 0; }
     .parlay li { white-space: nowrap; }
@@ -94,6 +114,21 @@
       <p class="note">Highest chances across every game for the line you picked. Players averaging under 1 three-point attempt are left off the lists below.</p>
     </div>
     <div class="top" id="top"></div>
+  </section>
+
+  <section class="section" id="finder">
+    <div class="section-head">
+      <div>
+        <h2>Long-shot finder</h2>
+        <p class="note">Type the price you like to bet each leg at. For every player, this finds the highest line where the model's chance still beats that price, sorted by edge. Check those lines at your sportsbook: if the book pays your price or more, it's a value leg by the model. Lines the model makes far safer than your price are left off, since no book will pay your price on them.</p>
+      </div>
+    </div>
+    <div class="controls">
+      <label for="target">Leg price</label><input id="target" type="text" inputmode="numeric" placeholder="+250" class="target">
+      <span class="note" id="breakeven"></span>
+    </div>
+    <div id="finds"></div>
+    <button type="button" class="linkbtn" id="more" hidden>Show more</button>
   </section>
 
   <section class="section" id="games"><div class="empty">Loading…</div></section>
@@ -239,8 +274,63 @@
   };
   document.getElementById("po").addEventListener("input", (e) => { st.parlayOdds = e.target.value.trim(); save(); drawParlay(); });
 
-  const drawAll = () => { drawLines(); drawTop(); drawGames(); drawParlay(); };
-  gameSel.addEventListener("change", drawGames);
+  // Long-shot finder: for each player, the highest line (2+ to 5+) whose
+  // model chance still beats the leg price the user bets at.
+  const targetIn = document.getElementById("target");
+  targetIn.value = st.target || "+250";
+  let showN = 12;
+  const drawFinder = () => {
+    const raw = (targetIn.value.trim() || "+250");
+    const be = parseOdds(norm(raw));
+    targetIn.classList.toggle("bad", be == null);
+    const box = document.getElementById("finds"), more = document.getElementById("more");
+    if (be == null) { box.replaceChildren(el("div", { class: "empty", text: "Type a price like +250." })); more.hidden = true; document.getElementById("breakeven").textContent = ""; return; }
+    document.getElementById("breakeven").textContent = `${norm(raw)} breaks even at ${pct(be, 1)}`;
+    const gid = gameSel.value;
+    const cap = Math.min(be * 1.6, be + 0.18);   // lines much safer than the price won't be offered at it
+    const finds = [];
+    for (const p of players) {
+      if (p.tpa < 1 || (gid && p.game.game_id !== gid)) continue;
+      for (let line = 5; line >= 2; line--) {
+        const c = chance(p, line);
+        if (c > be) { if (c <= cap) finds.push({ p, line, c, edge: (c - be) * 100 }); break; }
+      }
+    }
+    finds.sort((a, b) => b.edge - a.edge);
+    more.hidden = finds.length <= showN;
+    if (!finds.length) { box.replaceChildren(el("div", { class: "empty", text: "No line beats that price tonight." })); return; }
+    box.replaceChildren(
+      el("div", { class: "frow head" }, el("span", { text: "Player" }), el("span", { class: "num", text: "Line" }), el("span", { class: "num", text: "Model" }),
+        el("span", { class: "num col-edge", text: "Edge" }), el("span", { class: "num", text: "Book" }), el("span", { class: "num", text: "Verdict" }), el("span", { text: "" })),
+      ...finds.slice(0, showN).map(({ p, line, c, edge }) => {
+        const k = legKey(p.id, line);
+        const input = el("input", { type: "text", inputmode: "numeric", placeholder: "odds", "aria-label": `${p.name} ${line}+ threes odds` });
+        input.value = st.odds[k] || "";
+        const vbox = el("div", {});
+        const refresh = () => { const a = assess(c, st.odds[k]); input.classList.toggle("bad", !!(a && a.bad)); vbox.replaceChildren(verdict(a)); };
+        input.addEventListener("input", () => { const v = input.value.trim(); if (v) st.odds[k] = v; else delete st.odds[k]; save(); refresh(); });
+        refresh();
+        const on = !!st.legs.find((l) => l.id === p.id && l.line === line);
+        const add = el("button", { type: "button", class: "addleg", "aria-pressed": String(on), "aria-label": `${on ? "Remove" : "Add"} ${p.name} ${line}+ to parlay`, text: on ? "✓" : "+" });
+        add.addEventListener("click", () => {
+          const had = st.legs.find((l) => l.id === p.id && l.line === line);
+          st.legs = st.legs.filter((l) => l.id !== p.id);
+          if (!had) st.legs.push({ id: p.id, line });
+          save(); drawAll();
+        });
+        return el("div", { class: "frow" },
+          el("span", { class: "name" }, playerLink(p.id, shortName(p.name)), el("small", { text: `${p.team} vs ${p.opp} · ${p.tpa.toFixed(1)} att` })),
+          el("span", { class: "line", text: `${line}+` }),
+          el("span", { class: "num" }, pct(c), el("small", { text: `fair ${fairOdds(c)}` })),
+          el("span", { class: "num col-edge edgeup", text: `+${edge.toFixed(1)}` }),
+          input, vbox, add);
+      }));
+  };
+  targetIn.addEventListener("input", () => { st.target = targetIn.value.trim(); save(); showN = 12; drawFinder(); });
+  document.getElementById("more").addEventListener("click", () => { showN += 12; drawFinder(); });
+
+  const drawAll = () => { drawLines(); drawTop(); drawFinder(); drawGames(); drawParlay(); };
+  gameSel.addEventListener("change", () => { drawFinder(); drawGames(); });
   document.getElementById("clear").addEventListener("click", () => { st.odds = {}; st.legs = []; st.parlayOdds = ""; save(); drawAll(); });
   document.getElementById("clear-parlay").addEventListener("click", () => { st.legs = []; st.parlayOdds = ""; save(); drawAll(); });
   drawAll();
