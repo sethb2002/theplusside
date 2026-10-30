@@ -53,8 +53,12 @@
   .ladder button[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); }
   .ladder button[aria-pressed="true"] b { color: var(--accent); }
   .ladder button:focus-visible { outline: 2px solid var(--accent); }
-  .pricecheck { display: grid; grid-template-columns: 8rem minmax(0, 1fr); gap: .75rem; align-items: center; }
+  .pricecheck { display: grid; grid-template-columns: 10.5rem minmax(0, 1fr); gap: .75rem; align-items: center; }
   .pricecheck input { font: inherit; font-size: 1.1rem; text-align: right; padding: .55rem .7rem; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); color: var(--ink); width: 100%; font-variant-numeric: tabular-nums; }
+  .oddsbox { display: flex; gap: .3rem; }
+  .sign { all: unset; cursor: pointer; flex: none; width: 2.4rem; text-align: center; font-size: 1.2rem; font-weight: 600; color: var(--accent); border: 1px solid var(--line); border-radius: 10px; }
+  .sign:focus-visible { outline: 2px solid var(--accent); }
+  .pricecheck input::placeholder { color: var(--muted); opacity: .6; font-size: .9rem; }
   .pricecheck input.bad { border-color: var(--miss); }
   .verdict { font-variant-numeric: tabular-nums; line-height: 1.3; }
   .verdict b { font-size: 1.05rem; }
@@ -112,7 +116,7 @@
     .bignum b { font-size: 2.2rem; }
     .facts { grid-template-columns: repeat(2, 1fr); row-gap: .7rem; }
     .ladder { grid-template-columns: repeat(3, 1fr); }
-    .pricecheck { grid-template-columns: 7rem minmax(0, 1fr); }
+    .pricecheck { grid-template-columns: 1fr; }
     .lrow { grid-template-columns: minmax(0, 1fr) 2.6rem 3.3rem 4rem; gap: .35rem; }
     .parlay { padding: .6rem .8rem calc(.6rem + env(safe-area-inset-bottom, 0px)); }
     .parlay ul { flex-wrap: nowrap; overflow-x: auto; }
@@ -167,7 +171,7 @@
     <div class="parlay-sum">
       <div><b id="pc">–</b><span>model chance</span></div>
       <div><b id="pf">–</b><span>fair odds</span></div>
-      <div><input id="po" type="text" inputmode="numeric" placeholder="+2500" aria-label="Parlay book odds"><span>book odds</span></div>
+      <div><input id="po" type="text" autocomplete="off" enterkeyhint="done" placeholder="Odds" aria-label="Parlay book odds"><span>book odds</span></div>
       <div id="pv"></div>
     </div>
   </section>
@@ -283,12 +287,21 @@
     const prob = chance(p, st.n);
     const k = `${p.id}:${st.n}`;
 
-    const oddsIn = el("input", { type: "text", inputmode: "numeric", placeholder: "+250", "aria-label": `Sportsbook odds for ${p.name} ${st.n}+ threes` });
+    const oddsIn = el("input", { type: "text", inputmode: "text", autocomplete: "off", enterkeyhint: "done", placeholder: "Type odds", "aria-label": `Sportsbook odds for ${p.name} ${st.n}+ threes` });
     oddsIn.value = st.odds[k] || "";
     const vbox = el("div", {});
     const refresh = () => { const a = assess(prob, st.odds[k]); oddsIn.classList.toggle("bad", !!(a && a.bad)); vbox.replaceChildren(verdict(a, `Type the odds you see. Anything better than ${fairOdds(prob)} is a good price.`)); };
     oddsIn.addEventListener("input", () => { const v = oddsIn.value.trim(); if (v) st.odds[k] = v; else delete st.odds[k]; save(); refresh(); });
     refresh();
+    // Sign toggle: phone number pads often have no + or − key
+    const signBtn = el("button", { type: "button", class: "sign", "aria-label": "Switch between plus and minus odds", text: "±" });
+    signBtn.addEventListener("click", () => {
+      let v = (oddsIn.value || "").trim();
+      v = v.startsWith("-") ? "+" + v.slice(1) : "-" + v.replace(/^\+/, "");
+      oddsIn.value = v === "-" || v === "+" ? "" : v;
+      oddsIn.dispatchEvent(new Event("input"));
+      oddsIn.focus();
+    });
 
     const inLeg = st.legs.find((l) => String(l.id) === String(p.id));
     const same = inLeg && inLeg.line === st.n;
@@ -321,7 +334,7 @@
       el("div", { class: "step" }, el("span", { class: "lab", text: "Other lines" }), ladder),
       el("div", { class: "step" },
         el("span", { class: "lab", text: "Your sportsbook's odds" }),
-        el("div", { class: "pricecheck" }, oddsIn, vbox)),
+        el("div", { class: "pricecheck" }, el("div", { class: "oddsbox" }, signBtn, oddsIn), vbox)),
       addBtn));
   };
 
@@ -361,7 +374,7 @@
         el("div", { class: "controls" }, lineChips(), el("span", { class: "hint", text: "Highest chances on tonight's slate. Tap a player to check him." })),
         el("div", { class: "card list" }, head("Line", "Chance", "Fair"), ...best.map((p) => row(p, st.line, `${st.line}+`, fairOdds(chance(p, st.line)))))));
     } else if (st.tab === "long") {
-      const tin = el("input", { class: "target", type: "text", inputmode: "numeric", value: st.target, "aria-label": "Leg price" });
+      const tin = el("input", { class: "target", type: "text", autocomplete: "off", value: st.target, "aria-label": "Leg price" });
       const listBox = el("div", { class: "card list" });
       const msg = el("span", { class: "hint" });
       const fill = () => {
