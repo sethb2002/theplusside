@@ -158,3 +158,8 @@ footer .wrap { padding-block: 1.25rem 2rem; display: flex; justify-content: spac
   .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .tile .big { font-size: 2rem; }
 }
+
+/* fair odds under a pick's percentage */
+.picks .pct { text-align: right; }
+.picks .pct .fair { display: block; font-family: var(--font-body); font-weight: 500; font-size: .72rem; color: var(--muted); line-height: 1.1; }
+.valuelink { font-size: .85rem; font-weight: 500; }

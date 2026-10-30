@@ -104,7 +104,8 @@
           el("ol", { class: "picks" }, g.picks.map((p, j) =>
             el("li", {}, el("span", { class: "rank", text: j + 1 }),
               el("span", { class: "who" }, playerLink(p.id, p.name), el("small", { text: p.team })),
-              el("span", { class: "pct", text: pct(p.p, 1) }))))),
+              el("span", { class: "pct" }, pct(p.p, 1), el("small", { class: "fair", text: `fair ${TPS.fairOdds(p.p)}` })))))),
+        el("a", { class: "valuelink", href: "value.html", text: "Check these against your sportsbook's odds" }),
         el("details", { class: "more" }, el("summary", { text: "All starters" }),
           el("div", { class: "lineups" }, lineup(g.away, A), lineup(g.home, H))));
       return card;

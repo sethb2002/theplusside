@@ -44,6 +44,7 @@ const TPS = (() => {
       ["players", "Players", `${root}/firstbasket/players.html`],
       ["teams", "Teams", `${root}/firstbasket/teams.html`],
       ["jumpball", "Jump balls", `${root}/firstbasket/jumpball.html`],
+      ["value", "Value", `${root}/firstbasket/value.html`],
       ["about", "How it works", `${root}/firstbasket/about.html`],
     ];
     const bar = el("header", { class: "bar" },
@@ -110,5 +111,18 @@ const TPS = (() => {
 
   const shortName = (n) => { const p = (n || "").split(" "); return p.length > 1 ? `${p[0][0]}. ${p.slice(1).join(" ")}` : n || ""; };
 
-  return { SITE, load, pct, int, el, dateLabel, time12, playerLink, header, footer, table, root, shortName };
+  // Odds helpers. American odds: +600 pays 6 to 1; -150 means bet 150 to win 100.
+  const fairOdds = (p) => {
+    if (!p || p <= 0 || p >= 1) return "–";
+    return p < 0.5 ? `+${Math.round((1 / p - 1) * 100)}` : `${Math.round((-p / (1 - p)) * 100)}`;
+  };
+  const parseOdds = (txt) => {
+    const t = String(txt || "").trim().replace(/\s/g, "");
+    if (!/^[+-]?\d{3,6}$/.test(t)) return null;
+    const n = Number(t);
+    if (Math.abs(n) < 100) return null;
+    return n > 0 ? 100 / (n + 100) : -n / (-n + 100);
+  };
+
+  return { SITE, load, pct, int, el, dateLabel, time12, playerLink, header, footer, table, root, shortName, fairOdds, parseOdds };
 })();
