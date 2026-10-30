@@ -45,6 +45,7 @@ const TPS = (() => {
       ["teams", "Teams", `${root}/firstbasket/teams.html`],
       ["jumpball", "Jump balls", `${root}/firstbasket/jumpball.html`],
       ["value", "Value", `${root}/firstbasket/value.html`],
+      ["threes", "Threes", `${root}/firstbasket/threes.html`],
       ["about", "How it works", `${root}/firstbasket/about.html`],
     ];
     const bar = el("header", { class: "bar" },
