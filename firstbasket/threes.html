@@ -466,8 +466,8 @@
     const pros = [], cons = [];
     const g = p.game, o = (g.opp || {})[p.team] || {};
     const total = g.teams_ranked || 30;
-    if (o.rank && o.rank <= 6) pros.push([3, `${p.opp} allow the ${o.rank === 1 ? "most" : ord(o.rank) + "-most"} three-point attempts in the league (${o.att} a game)`]);
-    else if (o.rank && o.rank > total - 5) cons.push([1, `Tough matchup: ${p.opp} allow the ${o.rank === total ? "fewest" : ord(total - o.rank + 1) + "-fewest"} three-point attempts`]);
+    if (o.rank && o.rank <= 6) pros.push([3, `${p.opp} allow the ${o.rank === 1 ? "most" : ord(o.rank) + "-most"} three-point attempts over their last 25 games (${o.att} a game)`]);
+    else if (o.rank && o.rank > total - 5) cons.push([1, `Tough matchup: ${p.opp} allow the ${o.rank === total ? "fewest" : ord(total - o.rank + 1) + "-fewest"} three-point attempts over their last 25 games`]);
     for (const who of p.boost || []) pros.push([4, `${who} is out, so more shots go to him`]);
     const m = p.l10m || [], at = p.l10a || [], mins = p.l10min || [];
     if (m.length >= 5) {
