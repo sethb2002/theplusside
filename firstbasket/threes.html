@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>NBA Threes Projections | The Plus Side</title>
+<title>Best NBA Threes Legs Tonight | The Plus Side</title>
 <meta name="description" content="Look up any NBA player tonight, pick how many threes, and see the model's chance, fair odds and whether your sportsbook's price is worth it.">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="The Plus Side">
@@ -71,6 +71,36 @@
   .btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   .hint { color: var(--muted); font-size: .9rem; }
 
+  /* ---------- Legs at your price ---------- */
+  .finder { display: flex; flex-direction: column; gap: .8rem; padding: 1.2rem; border: 2px solid var(--accent); }
+  .finder-ask { display: flex; align-items: center; gap: .6rem; flex-wrap: wrap; font-family: var(--font-display); font-weight: 700; font-size: 1.6rem; text-transform: uppercase; letter-spacing: .01em; }
+  .finder-ask label { font: inherit; color: var(--ink); }
+  .pricebox { display: inline-flex; gap: .3rem; }
+  .pricebox input { width: 7.5rem; font-family: var(--font-display); font-weight: 700; font-size: 1.8rem; text-align: center; padding: .25rem .5rem; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); color: var(--accent); font-variant-numeric: tabular-nums; }
+  .pricebox input:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+  .pricebox input.bad { border-color: var(--miss); color: var(--miss); }
+  .finder-tail { color: var(--muted); }
+  .chips { display: flex; gap: .4rem; flex-wrap: wrap; }
+  .chips button { all: unset; cursor: pointer; padding: .3rem .75rem; border: 1px solid var(--line); border-radius: 999px; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--muted); }
+  .chips button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .chips button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .legs { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+  .leg { display: grid; grid-template-columns: 2rem minmax(0, 1fr) auto; gap: .2rem .8rem; padding: .9rem 0; border-top: 1px solid var(--line); align-items: start; }
+  .leg .rk { font-family: var(--font-display); font-weight: 700; font-size: 1.5rem; color: var(--muted); line-height: 1.2; }
+  .leg .what b { display: block; font-family: var(--font-display); font-weight: 700; font-size: 1.35rem; line-height: 1.15; }
+  .leg .what small { color: var(--muted); font-size: .82rem; }
+  .leg .num { text-align: right; font-variant-numeric: tabular-nums; }
+  .leg .num b { display: block; font-family: var(--font-display); font-weight: 700; font-size: 1.6rem; line-height: 1.1; }
+  .leg .num small { color: var(--muted); font-size: .75rem; }
+  .why { grid-column: 2 / 4; list-style: none; margin: .35rem 0 0; padding: 0; display: flex; flex-direction: column; gap: .2rem; font-size: .92rem; }
+  .why li::before { content: "✓ "; color: var(--plus); font-weight: 700; }
+  .why li.con::before { content: "! "; color: var(--miss); }
+  .why li.con { color: var(--muted); }
+  .why li.info::before { content: "• "; color: var(--muted); }
+  .why li.info { color: var(--muted); }
+  .leg-actions { grid-column: 2 / 4; display: flex; gap: 1rem; margin-top: .4rem; }
+  .blockhead { margin-top: .5rem; }
+
   /* ---------- Browse tabs ---------- */
   .tabs { display: flex; gap: .3rem; border-bottom: 1px solid var(--line); overflow-x: auto; }
   .tabs button { all: unset; cursor: pointer; padding: .6rem .9rem; font-weight: 600; color: var(--muted); border-bottom: 3px solid transparent; white-space: nowrap; }
@@ -118,6 +148,13 @@
   .linkbtn { all: unset; cursor: pointer; color: var(--accent); font-size: .85rem; font-weight: 500; }
 
   @media (max-width: 560px) {
+    .finder { padding: 1rem; }
+    .finder-ask { font-size: 1.3rem; gap: .45rem; }
+    .pricebox input { width: 6.4rem; font-size: 1.5rem; }
+    .leg { grid-template-columns: 1.5rem minmax(0, 1fr) auto; gap: .2rem .6rem; }
+    .leg .what b { font-size: 1.2rem; }
+    .why { grid-column: 1 / 4; }
+    .leg-actions { grid-column: 1 / 4; }
     .checker { padding: 1rem; }
     .inputs { grid-template-columns: 1fr; }
     .bignum b { font-size: 2.2rem; }
@@ -137,11 +174,28 @@
 <main class="wrap">
   <section>
     <div class="eyebrow">Threes</div>
-    <h1 id="headline">Threes checker</h1>
-    <p class="lede">Pick a player and how many threes. See his chance tonight and the fair odds, then type your sportsbook's price to see if it's worth it.</p>
+    <h1 id="headline">Best threes legs tonight</h1>
+    <p class="lede">Type the price you like to bet a leg at. The model picks tonight's best threes legs at that price and tells you why.</p>
   </section>
 
-  <!-- 1. The checker -->
+  <!-- 1. Legs at your price -->
+  <section class="card finder" id="finder" aria-label="Best legs at your price">
+    <div class="finder-ask">
+      <label for="price">I want a leg at</label>
+      <div class="pricebox">
+        <button type="button" class="sign" id="psign" aria-label="Switch between plus and minus odds">±</button>
+        <input id="price" type="text" autocomplete="off" enterkeyhint="done" value="+300" aria-describedby="price-note">
+      </div>
+      <span class="finder-tail">or longer</span>
+    </div>
+    <div class="chips" role="group" aria-label="Quick prices" id="chips"></div>
+    <p class="hint" id="price-note"></p>
+    <ol class="legs" id="legs-out"></ol>
+    <button type="button" class="linkbtn" id="legs-more" hidden>Show more legs</button>
+  </section>
+
+  <!-- 2. The checker -->
+  <h2 class="blockhead" id="checker-head">Look up any player</h2>
   <section class="card checker" id="checker" aria-label="Threes checker">
     <div class="inputs">
       <div class="step">
@@ -163,15 +217,15 @@
     <div id="answer"><p class="hint">Start typing a name, or tap any player in the lists below.</p></div>
   </section>
 
-  <!-- 2. Browse -->
+  <!-- 3. Browse -->
   <section class="section">
     <div class="tabs" role="tablist" id="tabs"></div>
     <div id="tabpanel"></div>
   </section>
 
-  <p class="note">How it works: minutes come from recent games; attempts per minute and make rate blend this season and last, newest games weighted most; the opponent's threes allowed adjusts attempts. Tested on 18,000 past player-games, the chances line up with what happened (players given 35% for 3+ hit 34.6%). Chances assume the player plays. Parlay chances multiply the legs, which ignores teammates affecting each other. Your odds stay on this device. Not betting advice.</p>
+  <p class="note">How it works: minutes come from recent games; attempts per minute and make rate blend this season and last, newest games weighted most; the opponent's threes allowed adjusts attempts, and when a regular shooter is out his teammates pick up part of his shots. "At your price" means lines the model prices close to the odds you typed, so that's roughly where sportsbooks list them; the best are the ones most likely to hit. Books set their own prices, so check yours. Tested on 18,000 past player-games, the chances line up with what happened (players given 35% for 3+ hit 34.6%). Chances assume the player plays. Parlay chances multiply the legs, which ignores teammates affecting each other. Your odds stay on this device. Not betting advice.</p>
 
-  <!-- 3. Parlay -->
+  <!-- 4. Parlay -->
   <section class="parlay" id="parlay" hidden aria-label="Your parlay">
     <div class="parlay-head"><h2>Your parlay</h2><button type="button" class="linkbtn" id="clear-parlay">Clear</button></div>
     <ul id="legs"></ul>
@@ -346,7 +400,8 @@
   };
 
   // ---------- browse tabs ----------
-  const TABS = [["best", "Most likely"], ["long", "Long shots"], ["all", "Every game"]];
+  const TABS = [["best", "Most likely"], ["all", "Every game"]];
+  if (!TABS.some(([id]) => id === st.tab)) st.tab = "best";
   const tabsBox = document.getElementById("tabs");
   const drawTabs = () => tabsBox.replaceChildren(...TABS.map(([id, label]) => {
     const b = el("button", { type: "button", role: "tab", "aria-selected": String(st.tab === id), text: label });
@@ -381,54 +436,6 @@
       panel.replaceChildren(el("div", { class: "section" },
         el("div", { class: "controls" }, lineChips(), el("span", { class: "hint", text: "Highest chances on tonight's slate. Tap a player to check him." })),
         el("div", { class: "card list" }, head("Line", "Chance", "Fair"), ...best.map((p) => row(p, st.line, `${st.line}+`, fairOdds(chance(p, st.line)))))));
-    } else if (st.tab === "long") {
-      const tin = el("input", { class: "target", type: "text", autocomplete: "off", value: st.target, "aria-label": "The odds you like to bet a leg at" });
-      const bestBox = el("div", {});
-      const listBox = el("div", { class: "card list" });
-      const msg = el("p", { class: "hint" });
-      const fill = () => {
-        const raw = norm(tin.value.trim() || "+250");
-        const be = parseOdds(raw);
-        tin.classList.toggle("bad", be == null);
-        if (be == null) { msg.textContent = "Type odds like +300."; bestBox.replaceChildren(); listBox.replaceChildren(); return; }
-        // "Around your price": the model's fair odds within about half again either side of it
-        const D = 1 / be, lo = 1 + (D - 1) / 1.5, hi = 1 + (D - 1) * 1.5;
-        const finds = [];
-        for (const p of players) {
-          if (p.tpa < 3) continue;   // regular shooters: the players books post threes lines for
-          for (let n = 2; n <= 8; n++) { const c = chance(p, n), d = 1 / c; if (d >= lo && d <= hi) finds.push({ p, n, c }); }
-        }
-        finds.sort((a, b) => b.c - a.c);
-        msg.textContent = `Every line the model prices near ${raw} (fair odds from ${fairOdds(1 / lo)} to ${fairOdds(1 / hi)}), best bet first. A ${raw} bet needs to hit ${pct(be, 1)} of the time, so ✅ lines are worth it at ${raw} and ❌ lines need longer odds. Books set their own prices, so check yours.`;
-        if (!finds.length) { bestBox.replaceChildren(); listBox.replaceChildren(el("p", { class: "empty", text: "No lines near that price tonight." })); return; }
-        const top = finds[0];
-        const go = (p, n) => { pick(p.id, n); document.getElementById("checker").scrollIntoView({ behavior: "smooth", block: "start" }); };
-        const card = el("button", { type: "button", class: "card bestbet", "aria-label": `Check ${top.p.name} ${top.n}+ threes` },
-          el("span", { class: "lab", text: `Best bet at ${raw}` }),
-          el("b", { text: `${top.p.name} ${top.n}+ threes` }),
-          el("span", { text: `${pct(top.c)} chance by the model. ${raw} only needs ${pct(be)}, so if your book pays ${raw} or more on this, it's the best leg at that price. Fair odds ${fairOdds(top.c)}.` }));
-        card.addEventListener("click", () => go(top.p, top.n));
-        bestBox.replaceChildren(card);
-        listBox.replaceChildren(head("Line", "Chance", `At ${raw}`), ...finds.slice(0, longN).map(({ p, n, c }) => {
-          const ok = c > be;
-          const b = el("button", { type: "button", class: "lrow", "aria-label": `Check ${p.name} ${n}+ threes` },
-            el("span", { class: "who" }, el("b", { text: p.name }), el("small", { text: `${p.team} ${opener(p)} · fair ${fairOdds(c)}` })),
-            el("span", { class: "r", text: `${n}+` }),
-            el("span", { class: "r big", text: pct(c) }),
-            el("span", { class: "r " + (ok ? "yes" : "no"), text: ok ? "✅ Yes" : `❌ ${fairOdds(c)}` }));
-          b.addEventListener("click", () => go(p, n));
-          return b;
-        }));
-        if (finds.length > longN) {
-          const more = el("button", { type: "button", class: "linkbtn", style: "padding:.7rem .4rem", text: `Show all ${finds.length} lines` });
-          more.addEventListener("click", () => { longN = 999; fill(); });
-          listBox.append(more);
-        }
-      };
-      tin.addEventListener("input", () => { st.target = tin.value.trim(); save(); longN = 12; fill(); });
-      fill();
-      panel.replaceChildren(el("div", { class: "section" },
-        el("div", { class: "controls" }, el("label", { text: "I bet legs at" }), tin), msg, bestBox, listBox));
     } else {
       const sel = el("select", { "aria-label": "Game" });
       sel.replaceChildren(new Option("All games", ""), ...data.games.map((g) => new Option(`${g.away} at ${g.home} · ${time12(g.time_et)}`, g.game_id)));
@@ -448,6 +455,98 @@
       panel.replaceChildren(el("div", { class: "section" }, el("div", { class: "controls" }, sel, lineChips()), ...cards));
     }
   };
+
+
+  // ---------- legs at your price ----------
+  const gameOf = {};
+  for (const g of data.games) for (const t of [g.away, g.home]) gameOf[t] = g;
+  const ord = (n) => n + (["th", "st", "nd", "rd"][((n % 100) - 20) % 10] || ["th", "st", "nd", "rd"][n % 100] || "th");
+  const avg = (xs) => xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : null;
+  const reasons = (p, n) => {
+    const pros = [], cons = [];
+    const g = p.game, o = (g.opp || {})[p.team] || {};
+    const total = g.teams_ranked || 30;
+    if (o.rank && o.rank <= 6) pros.push([3, `${p.opp} allow the ${o.rank === 1 ? "most" : ord(o.rank) + "-most"} three-point attempts in the league (${o.att} a game)`]);
+    else if (o.rank && o.rank > total - 5) cons.push([1, `Tough matchup: ${p.opp} allow the ${o.rank === total ? "fewest" : ord(total - o.rank + 1) + "-fewest"} three-point attempts`]);
+    for (const who of p.boost || []) pros.push([4, `${who} is out, so more shots go to him`]);
+    const m = p.l10m || [], at = p.l10a || [], mins = p.l10min || [];
+    if (m.length >= 5) {
+      const k = m.filter((x) => x >= n).length;
+      if (k / m.length >= 0.4) pros.push([2 + k / m.length, `Hit ${n}+ in ${k} of his last ${m.length} games`]);
+      else if (k === 0 && m.length >= 8) cons.push([1, `Hasn't hit ${n}+ in his last ${m.length} games`]);
+    }
+    const a5 = avg(at.slice(0, 5));
+    if (a5 != null && p.s_tpa != null && a5 >= p.s_tpa + 1.5 && p.s_games >= 5) pros.push([2.5, `Shooting more lately: ${a5.toFixed(1)} attempts a game over his last 5 (season ${p.s_tpa})`]);
+    else if (a5 != null && a5 >= 8) pros.push([1.8, `High volume: ${a5.toFixed(1)} attempts a game over his last 5`]);
+    const m5 = avg(mins.slice(0, 5));
+    if (m5 != null && m5 >= 34) pros.push([1.2, `Playing big minutes: ${Math.round(m5)} a game lately`]);
+    if (p.pct >= 0.39) pros.push([1, `Makes ${pct(p.pct, 1)} of his threes`]);
+    if (m5 != null && m5 < 22) cons.push([0.5, `Limited minutes lately (${Math.round(m5)} a game)`]);
+    pros.sort((x, y) => y[0] - x[0]); cons.sort((x, y) => y[0] - x[0]);
+    const real = pros.length;
+    // every leg gets a "why": fall back to plain volume and line history
+    if (pros.length < 2 && a5 != null && !pros.some((x) => x[1].includes("attempts a game over his last 5"))) pros.push([0, `${a5.toFixed(1)} attempts a game over his last 5`, "info"]);
+    if (pros.length < 2 && m.length >= 5 && !pros.some((x) => x[1].startsWith("Hit "))) pros.push([0, `Hit ${n}+ in ${m.filter((x) => x >= n).length} of his last ${m.length} games`, "info"]);
+    return { real, pros: pros.slice(0, 3), cons: cons.slice(0, 1).map((x) => x[1]) };
+  };
+  const priceIn = document.getElementById("price");
+  if (st.price) priceIn.value = st.price;
+  let legsN = 8;
+  const CHIPS = ["+150", "+200", "+250", "+300", "+400", "+500"];
+  const drawChips = (raw) => document.getElementById("chips").replaceChildren(...CHIPS.map((c) => {
+    const b = el("button", { type: "button", "aria-pressed": String(norm(raw) === c), text: c });
+    b.addEventListener("click", () => { priceIn.value = c; st.price = c; save(); legsN = 8; drawFinder(); });
+    return b;
+  }));
+  const drawFinder = () => {
+    const raw = norm(priceIn.value.trim() || "+300");
+    drawChips(raw);
+    const be = parseOdds(raw);
+    const note = document.getElementById("price-note"), list = document.getElementById("legs-out"), more = document.getElementById("legs-more");
+    priceIn.classList.toggle("bad", be == null);
+    if (be == null) { note.textContent = "Type odds like +300."; list.replaceChildren(); more.hidden = true; return; }
+    // lines the model prices near the price you typed (from a bit shorter to well longer)
+    const D = 1 / be, lo = 1 + (D - 1) * 0.8, hi = 1 + (D - 1) * 1.5;
+    const best = {};
+    for (const p of players) {
+      if (p.tpa < 4 || p.min < 24) continue;   // regular shooters: the players books post threes lines for
+      for (let n = 1; n <= 8; n++) {
+        const c = chance(p, n), d = 1 / c;
+        if (d >= lo && d <= hi && (!best[p.id] || c > best[p.id].c)) best[p.id] = { p, n, c };
+      }
+    }
+    // most likely to hit first; the reasons break near-ties (each pro adds a little, each warning takes a little away)
+    for (const x of Object.values(best)) { x.r = reasons(x.p, x.n); x.score = x.c + 0.006 * x.r.real - 0.01 * x.r.cons.length; }
+    const legs = Object.values(best).sort((x, y) => y.score - x.score);
+    note.textContent = legs.length ? `${legs.length} legs from regular shooters should be priced around ${raw} tonight. Best first: most likely to hit, with the most going for them.` : `No legs near ${raw} tonight. Try another price.`;
+    more.hidden = legs.length <= legsN;
+    list.replaceChildren(...legs.slice(0, legsN).map(({ p, n, c, r }, i) => {
+      const check = el("button", { type: "button", class: "linkbtn", text: "Check his price" });
+      check.addEventListener("click", () => { pick(p.id, n); document.getElementById("checker-head").scrollIntoView({ behavior: "smooth", block: "start" }); });
+      const inLeg = st.legs.find((l) => String(l.id) === String(p.id) && l.line === n);
+      const add = el("button", { type: "button", class: "linkbtn", text: inLeg ? "In your parlay ✓" : "+ Add to parlay" });
+      add.addEventListener("click", () => {
+        const had = st.legs.find((l) => String(l.id) === String(p.id) && l.line === n);
+        st.legs = st.legs.filter((l) => String(l.id) !== String(p.id));
+        if (!had) st.legs.push({ id: p.id, line: n });
+        save(); drawParlay(); drawFinder(); drawChecker();
+      });
+      return el("li", { class: "leg" },
+        el("span", { class: "rk", text: String(i + 1) }),
+        el("span", { class: "what" }, el("b", { text: `${p.name} ${n}+ threes` }), el("small", { text: `${p.team} ${opener(p)} · ${time12(p.game.time_et)}` })),
+        el("span", { class: "num" }, el("b", { text: pct(c) }), el("small", { text: `chance · fair ${fairOdds(c)}` })),
+        el("ul", { class: "why" }, ...r.pros.map((t) => el("li", { class: t[2] || null, text: t[1] })), ...r.cons.map((t) => el("li", { class: "con", text: t }))),
+        el("div", { class: "leg-actions" }, check, add));
+    }));
+  };
+  priceIn.addEventListener("input", () => { st.price = priceIn.value.trim(); save(); legsN = 8; drawFinder(); });
+  document.getElementById("psign").addEventListener("click", () => {
+    let v = (priceIn.value || "").trim();
+    v = v.startsWith("-") ? "+" + v.slice(1) : "-" + v.replace(/^\+/, "");
+    priceIn.value = v === "-" || v === "+" ? "" : v;
+    priceIn.dispatchEvent(new Event("input")); priceIn.focus();
+  });
+  document.getElementById("legs-more").addEventListener("click", () => { legsN += 8; drawFinder(); });
 
   // ---------- parlay ----------
   const drawParlay = () => {
@@ -479,7 +578,7 @@
   if (qs.get("p") && byId[qs.get("p")]) { st.pid = qs.get("p"); if (Number(qs.get("n"))) st.n = Math.max(1, Math.min(MAXN, Number(qs.get("n")))); }
   if (st.pid && !byId[st.pid]) st.pid = null;
 
-  drawTabs(); drawChecker(); drawTab(); drawParlay();
+  drawTabs(); drawChecker(); drawTab(); drawParlay(); drawFinder();
   TPS.footer(data.updated);
 })();
 </script>
