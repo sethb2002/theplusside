@@ -383,7 +383,7 @@
     box.replaceChildren(el("div", { class: "answer" },
       el("div", { class: "answer-head" },
         el("h2", {}, TPS.playerLink(p.id, p.name)),
-        el("span", { text: `${p.team} ${opener(p)} · ${time12(p.game.time_et)}` })),
+        el("span", { text: `${p.team} ${opener(p)} · ${time12(p.game.time_et)}${p.game.line ? ` · ${p.game.line.fav} −${p.game.line.pts}` : ""}` })),
       el("div", { class: "bignums" },
         el("div", { class: "bignum" }, el("b", { text: pct(prob) }), el("span", { text: `chance of ${st.n}+ threes` })),
         el("div", { class: "bignum" }, el("b", { text: fairOdds(prob) }), el("span", { text: "fair odds" }))),
@@ -469,6 +469,8 @@
     if (o.rank && o.rank <= 6) pros.push([3, `${p.opp} allow the ${o.rank === 1 ? "most" : ord(o.rank) + "-most"} three-point attempts over their last 25 games (${o.att} a game)`]);
     else if (o.rank && o.rank > total - 5) cons.push([1, `Tough matchup: ${p.opp} allow the ${o.rank === total ? "fewest" : ord(total - o.rank + 1) + "-fewest"} three-point attempts over their last 25 games`]);
     for (const who of p.boost || []) pros.push([4, `${who} is out, so more shots go to him`]);
+    const ln = g.line;
+    if (ln && ln.pts >= 10) cons.push([2, `Blowout risk: ${ln.fav} favored by ${ln.pts}, so starters may sit late`]);
     const m = p.l10m || [], at = p.l10a || [], mins = p.l10min || [];
     if (m.length >= 5) {
       const k = m.filter((x) => x >= n).length;

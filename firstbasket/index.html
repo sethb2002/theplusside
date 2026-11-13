@@ -86,7 +86,7 @@
             el("span", { class: "who" }, playerLink(p.id, p.name), p.q ? el("small", { class: "qtag", text: "Q", title: "Questionable" }) : null),
             el("span", { class: "pct", text: pct(p.p, 1) })))));
       const card = el("article", { class: "card game", style: `animation-delay:${Math.min(i, 10) * 40}ms` },
-        el("div", { class: "game-top" }, el("span", { text: time12(g.time_et) }),
+        el("div", { class: "game-top" }, el("span", { text: time12(g.time_et) + (g.line ? ` · ${g.line.fav} −${g.line.pts}` : ""), title: g.line ? `Point spread (${g.line.book})` : null }),
           el("a", { href: `matchup.html?away=${g.away}&home=${g.home}`, text: "Full matchup" })),
         el("div", { class: "matchline" },
           el("div", { class: "t" + (g.fav === g.away ? " fav" : ""), title: names[g.away] || g.away }, g.away,
