@@ -64,6 +64,7 @@
     <div class="eyebrow">Most likely vs best price</div>
     <h1 id="headline">Which bets are worth it</h1>
     <p class="lede">The most likely player isn't always the best bet. Type the first basket odds your sportsbook shows, and each game shows two picks: the <b>most likely</b> to score first, and the <b>best price</b>, the player who pays the most compared with his real chance. Your odds stay on this device.</p>
+    <p class="note" id="booknote" hidden></p>
   </section>
 
   <section class="section" id="best-section">
@@ -95,6 +96,12 @@
   catch (e) { document.getElementById("games").replaceChildren(el("div", { class: "empty", text: "Couldn't load today's games. Refresh to try again." })); return; }
   document.getElementById("headline").textContent = `Value finder: ${dateLabel(today.date, { weekday: "long", month: "long", day: "numeric" })}`;
 
+  // Tonight's book odds loaded by The Plus Side (from FanDuel screenshots), if any
+  let book = null;
+  try { book = await load("fb_odds"); if (!book || book.date !== today.date) book = null; } catch (e) { book = null; }
+  const bookOdds = (p) => (book && book.odds && book.odds[p.id]) || "";
+  if (book) { const n = document.getElementById("booknote"); n.hidden = false; n.textContent = `${book.book} odds loaded at ${book.updated}. Best prices show automatically. Type over any price to use your own odds.`; }
+
   // Odds you typed, kept in this browser only
   const KEY = `tps-odds-${today.date}`;
   let odds = {};
@@ -112,7 +119,7 @@
   }
 
   const assess = (p) => {
-    const raw = odds[p.key];
+    const raw = odds[p.key] || bookOdds(p);
     if (!raw) return null;
     const implied = parseOdds(/^\d+$/.test(raw) ? `+${raw}` : raw);
     if (implied == null) return { bad: true };
@@ -149,8 +156,8 @@
     for (const { g, top, best } of picks.slice(0, 3)) {
       lines.push(`${g.away} @ ${g.home}`);
       lines.push(`🎯 Most likely: ${top.name} ${pct(top.p, 1)}`);
-      if (best === top) lines.push(`💰 Best price too, at ${showOdds(odds[best.key])} (fair ${fairOdds(best.p)})`);
-      else lines.push(`💰 Best price: ${best.name} ${showOdds(odds[best.key])} (model ${pct(best.p, 1)}, fair ${fairOdds(best.p)})`);
+      if (best === top) lines.push(`💰 Best price too, at ${showOdds(odds[best.key] || bookOdds(best))} (fair ${fairOdds(best.p)})`);
+      else lines.push(`💰 Best price: ${best.name} ${showOdds(odds[best.key] || bookOdds(best))} (model ${pct(best.p, 1)}, fair ${fairOdds(best.p)})`);
       lines.push("");
     }
     lines.push("The most likely guy isn't always the best bet.", "", "#NBA #FirstBasket");
@@ -171,11 +178,11 @@
   const drawBest = () => {
     const rated = players.map((p) => ({ p, a: assess(p) })).filter((x) => x.a && !x.a.bad && x.a.edge > 0).sort((x, y) => y.a.edge - x.a.edge).slice(0, 3);
     const box = document.getElementById("best");
-    if (!rated.length) { box.replaceChildren(el("div", { class: "empty", text: players.some((p) => odds[p.key]) ? "None of the odds you've entered beat the model's fair price yet." : "Enter some odds below and the best prices show up here." })); return; }
+    if (!rated.length) { box.replaceChildren(el("div", { class: "empty", text: players.some((p) => odds[p.key] || bookOdds(p)) ? "None of the odds you've entered beat the model's fair price yet." : "Enter some odds below and the best prices show up here." })); return; }
     box.replaceChildren(...rated.map(({ p, a }) => el("div", { class: "card" },
       el("div", { class: "who", text: `${p.name} (${p.team})` }),
       el("div", { class: "edge", text: `${a.edge >= 0 ? "+" : "−"}${Math.abs(a.edge).toFixed(1)}` }),
-      el("div", { class: "sub", text: `Model ${pct(p.p, 1)} vs odds ${/^\d+$/.test(odds[p.key]) ? "+" + odds[p.key] : odds[p.key]} (${pct(a.implied, 1)}) · fair ${fairOdds(p.p)}` }))));
+      el("div", { class: "sub", text: `Model ${pct(p.p, 1)} vs odds ${showOdds(odds[p.key] || bookOdds(p))} (${pct(a.implied, 1)}) · fair ${fairOdds(p.p)}` }))));
   };
 
   const draw = () => {
@@ -201,14 +208,14 @@
           tagEls.get(p.key).replaceChildren(...t);
         }
         const kids = [el("b", { text: "Most likely: " }), `${shortName(top.name)} ${pct(top.p, 1)}`];
-        const entered = rows.some((p) => odds[p.key]);
-        if (best) kids.push(" · ", el("span", { class: "bp", text: "Best price: " }), `${shortName(best.name)} ${showOdds(odds[best.key])} (edge +${bestA.edge.toFixed(1)}, ${bestA.ev >= 0 ? "+" : "−"}$${Math.abs(bestA.ev).toFixed(2)} per $10)`);
-        else kids.push(" · ", el("span", { text: entered ? "No value in the odds you've entered" : "Enter odds to find the best price" }));
+        const entered = rows.some((p) => odds[p.key] || bookOdds(p));
+        if (best) kids.push(" · ", el("span", { class: "bp", text: "Best price: " }), `${shortName(best.name)} ${showOdds(odds[best.key] || bookOdds(best))} (edge +${bestA.edge.toFixed(1)}, ${bestA.ev >= 0 ? "+" : "−"}$${Math.abs(bestA.ev).toFixed(2)} per $10)`);
+        else kids.push(" · ", el("span", { text: entered ? "No value at these prices" : "Enter odds to find the best price" }));
         sum.replaceChildren(...kids);
       };
       for (const p of rows) {
         const input = el("input", { type: "text", inputmode: "numeric", placeholder: "odds", "aria-label": `${p.name} odds`, id: `o-${p.key}` });
-        input.value = odds[p.key] || "";
+        input.value = odds[p.key] || bookOdds(p);
         const vbox = el("div", {});
         const refresh = () => {
           const a = assess(p);
