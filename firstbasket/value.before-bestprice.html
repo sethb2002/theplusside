@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>First Basket Value Finder | The Plus Side</title>
+<meta name="description" content="Type in your sportsbook's first basket odds and see which players the model thinks are underpriced tonight.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="The Plus Side">
+<meta property="og:title" content="First Basket Value Finder">
+<meta property="og:description" content="Which first basket bets are worth it tonight? Compare sportsbook odds with the model.">
+<meta property="og:image" content="https://sethb2002.github.io/theplusside/firstbasket/img/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+  .best { display: grid; gap: .6rem; grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr)); }
+  .best .card { display: flex; flex-direction: column; gap: .2rem; }
+  .best .who { font-weight: 600; }
+  .best .edge { font-family: var(--font-display); font-weight: 700; font-size: 1.8rem; color: var(--plus); line-height: 1.1; font-variant-numeric: tabular-nums; }
+  .best .sub { color: var(--muted); font-size: .85rem; font-variant-numeric: tabular-nums; }
+  .vgame { display: flex; flex-direction: column; gap: .5rem; }
+  .vgame-head { display: flex; justify-content: space-between; align-items: baseline; gap: .5rem; flex-wrap: wrap; }
+  .vgame-head h2 { font-size: 1.35rem; }
+  .vgame-head span { color: var(--muted); font-size: .85rem; }
+  .vrow { display: grid; grid-template-columns: minmax(0, 1fr) 4.2rem 5.2rem 6.6rem; gap: .5rem; align-items: center; padding-block: .45rem; border-top: 1px solid var(--line); }
+  .vrow.head { border-top: 0; padding-block: 0; color: var(--muted); font-size: .75rem; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; }
+  .vrow .name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .vrow .name small { color: var(--muted); margin-left: .3rem; }
+  .vrow .num { text-align: right; font-variant-numeric: tabular-nums; }
+  .vrow .num small { display: block; color: var(--muted); font-size: .72rem; }
+  .vrow input { width: 100%; font: inherit; font-size: 1rem; text-align: right; padding: .35rem .5rem; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); color: var(--ink); font-variant-numeric: tabular-nums; }
+  .vrow input.bad { border-color: var(--miss); }
+  .verdict { text-align: right; font-variant-numeric: tabular-nums; font-size: .85rem; line-height: 1.2; }
+  .verdict b { display: block; font-size: .8rem; }
+  .verdict.value b { color: var(--plus); }
+  .verdict.close b { color: var(--muted); }
+  .verdict.over b { color: var(--miss); }
+  .verdict span { color: var(--muted); font-size: .75rem; }
+  .toolbar { display: flex; gap: .75rem; flex-wrap: wrap; align-items: center; justify-content: space-between; }
+  .linkbtn { all: unset; cursor: pointer; color: var(--accent); font-size: .875rem; font-weight: 500; }
+  .linkbtn:focus-visible { outline: 2px solid var(--accent); border-radius: 4px; }
+  @media (max-width: 480px) {
+    .vrow { grid-template-columns: minmax(0, 1fr) 3.4rem 4.6rem 5.4rem; gap: .35rem; }
+    .vrow .name small { display: block; margin-left: 0; }
+  }
+</style>
+</head>
+<body>
+<main class="wrap">
+  <section>
+    <div class="eyebrow">Value finder</div>
+    <h1 id="headline">Which bets are worth it</h1>
+    <p class="lede">Type the first basket odds your sportsbook shows for any player. The model compares them with its own chance and tells you whether the price is good. Your odds stay on this device.</p>
+  </section>
+
+  <section class="section" id="best-section">
+    <h2>Best value you've entered</h2>
+    <div class="best" id="best"><div class="empty">Enter some odds below and the best prices show up here.</div></div>
+  </section>
+
+  <section class="section">
+    <div class="toolbar">
+      <div class="controls">
+        <label for="game">Game</label><select id="game"></select>
+      </div>
+      <button type="button" class="linkbtn" id="clear">Clear my odds for today</button>
+    </div>
+    <div id="games" class="section"></div>
+    <p class="note">How to read it: <b>Edge</b> is the model's chance minus the chance the odds imply. +3.0 means the model thinks the player is 3 points more likely to score first than the price suggests. <b>Per $10</b> is the average profit or loss on a $10 bet if the model is right. Sportsbooks build a margin into these prices, so most players will show as overpriced; that's normal. Not betting advice.</p>
+  </section>
+</main>
+
+<script src="../assets/app.js" data-page="value" data-root=".."></script>
+<script>
+(async () => {
+  const { el, pct, load, dateLabel, time12, fairOdds, parseOdds, shortName } = TPS;
+  TPS.header();
+  let today;
+  try { today = await load("today"); }
+  catch (e) { document.getElementById("games").replaceChildren(el("div", { class: "empty", text: "Couldn't load today's games. Refresh to try again." })); return; }
+  document.getElementById("headline").textContent = `Value finder: ${dateLabel(today.date, { weekday: "long", month: "long", day: "numeric" })}`;
+
+  // Odds you typed, kept in this browser only
+  const KEY = `tps-odds-${today.date}`;
+  let odds = {};
+  try { odds = JSON.parse(localStorage.getItem(KEY) || "{}") || {}; } catch (e) { odds = {}; }
+  const save = () => { try { localStorage.setItem(KEY, JSON.stringify(odds)); } catch (e) { /* storage off: still works for this visit */ } };
+
+  const gameSel = document.getElementById("game");
+  gameSel.replaceChildren(new Option("All games", ""), ...today.games.map((g) => new Option(`${g.away} at ${g.home} · ${time12(g.time_et)}`, g.game_id)));
+
+  const players = [];
+  for (const g of today.games) {
+    for (const team of [g.away, g.home]) {
+      for (const p of g.sides[team].players) players.push({ ...p, game: g, key: `${g.game_id}-${p.id}` });
+    }
+  }
+
+  const assess = (p) => {
+    const raw = odds[p.key];
+    if (!raw) return null;
+    const implied = parseOdds(/^\d+$/.test(raw) ? `+${raw}` : raw);
+    if (implied == null) return { bad: true };
+    const n = Number(/^\d+$/.test(raw) ? raw : raw.replace("+", ""));
+    const win = n > 0 ? n / 10 : 1000 / -n;          // profit on a $10 bet
+    const ev = p.p * win - (1 - p.p) * 10;
+    const edge = (p.p - implied) * 100;
+    const kind = edge >= 2 ? "value" : edge > -2 ? "close" : "over";
+    return { implied, edge, ev, kind };
+  };
+
+  const verdictEl = (a) => {
+    if (!a) return el("div", { class: "verdict" }, el("span", { text: "enter odds" }));
+    if (a.bad) return el("div", { class: "verdict over" }, el("b", { text: "Check odds" }), el("span", { text: "e.g. +600" }));
+    const label = a.kind === "value" ? "Value" : a.kind === "close" ? "Close" : "Overpriced";
+    const sign = (x) => (x >= 0 ? "+" : "−") + Math.abs(x).toFixed(1);
+    const money = (x) => (x >= 0 ? "+$" : "−$") + Math.abs(x).toFixed(2);
+    return el("div", { class: "verdict " + a.kind }, el("b", { text: `${label} ${sign(a.edge)}` }), el("span", { text: `${money(a.ev)} / $10` }));
+  };
+
+  const drawBest = () => {
+    const rated = players.map((p) => ({ p, a: assess(p) })).filter((x) => x.a && !x.a.bad && x.a.edge > 0).sort((x, y) => y.a.edge - x.a.edge).slice(0, 3);
+    const box = document.getElementById("best");
+    if (!rated.length) { box.replaceChildren(el("div", { class: "empty", text: players.some((p) => odds[p.key]) ? "None of the odds you've entered beat the model's fair price yet." : "Enter some odds below and the best prices show up here." })); return; }
+    box.replaceChildren(...rated.map(({ p, a }) => el("div", { class: "card" },
+      el("div", { class: "who", text: `${p.name} (${p.team})` }),
+      el("div", { class: "edge", text: `${a.edge >= 0 ? "+" : "−"}${Math.abs(a.edge).toFixed(1)}` }),
+      el("div", { class: "sub", text: `Model ${pct(p.p, 1)} vs odds ${/^\d+$/.test(odds[p.key]) ? "+" + odds[p.key] : odds[p.key]} (${pct(a.implied, 1)}) · fair ${fairOdds(p.p)}` }))));
+  };
+
+  const draw = () => {
+    const gid = gameSel.value;
+    const box = document.getElementById("games");
+    box.replaceChildren(...today.games.filter((g) => !gid || g.game_id === gid).map((g) => {
+      const rows = players.filter((p) => p.game === g).sort((a, b) => b.p - a.p);
+      const card = el("article", { class: "card vgame" },
+        el("div", { class: "vgame-head" }, el("h2", { text: `${g.away} at ${g.home}` }), el("span", { text: time12(g.time_et) })),
+        el("div", { class: "vrow head" }, el("span", { text: "Player" }), el("span", { class: "num", text: "Model" }), el("span", { class: "num", text: "Book odds" }), el("span", { class: "num", text: "Edge" })));
+      for (const p of rows) {
+        const input = el("input", { type: "text", inputmode: "numeric", placeholder: "odds", "aria-label": `${p.name} odds`, id: `o-${p.key}` });
+        input.value = odds[p.key] || "";
+        const vbox = el("div", {});
+        const refresh = () => {
+          const a = assess(p);
+          input.classList.toggle("bad", !!(a && a.bad));
+          vbox.replaceChildren(verdictEl(a));
+        };
+        input.addEventListener("input", () => {
+          const v = input.value.trim();
+          if (v) odds[p.key] = v; else delete odds[p.key];
+          save(); refresh(); drawBest();
+        });
+        refresh();
+        card.append(el("div", { class: "vrow" },
+          el("span", { class: "name" }, TPS.playerLink(p.id, shortName(p.name)), el("small", { text: `${p.team} ${p.pos || ""}` })),
+          el("span", { class: "num" }, pct(p.p, 1), el("small", { text: `fair ${fairOdds(p.p)}` })),
+          input, vbox));
+      }
+      return card;
+    }));
+    drawBest();
+  };
+
+  gameSel.addEventListener("change", draw);
+  document.getElementById("clear").addEventListener("click", () => { odds = {}; save(); draw(); });
+  draw();
+  TPS.footer(today.updated);
+})();
+</script>
+<script data-goatcounter="https://theplusside.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
+</body>
+</html>

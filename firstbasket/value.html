@@ -42,6 +42,15 @@
   .verdict span { color: var(--muted); font-size: .75rem; }
   .toolbar { display: flex; gap: .75rem; flex-wrap: wrap; align-items: center; justify-content: space-between; }
   .linkbtn { all: unset; cursor: pointer; color: var(--accent); font-size: .875rem; font-weight: 500; }
+  .gsum { font-size: .9rem; line-height: 1.5; padding: .5rem .7rem; border-radius: 8px; background: var(--bg); border: 1px solid var(--line); }
+  .gsum b { font-weight: 600; }
+  .gsum .bp { color: var(--plus); font-weight: 600; }
+  .vrow.bestrow { background: color-mix(in srgb, var(--plus) 10%, transparent); border-radius: 8px; padding-inline: .35rem; }
+  .tag { font-size: .68rem; font-weight: 600; padding: .05rem .35rem; border-radius: 6px; margin-left: .35rem; vertical-align: 1px; }
+  .tag.likely { background: var(--line); color: var(--muted); }
+  .tag.price { background: color-mix(in srgb, var(--plus) 18%, transparent); color: var(--plus); }
+  .copyrow { display: flex; gap: .75rem; align-items: center; flex-wrap: wrap; margin-top: .6rem; }
+  #copybox textarea { width: 100%; min-height: 12rem; font: inherit; font-size: .85rem; padding: .5rem; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); color: var(--ink); }
   .linkbtn:focus-visible { outline: 2px solid var(--accent); border-radius: 4px; }
   @media (max-width: 480px) {
     .vrow { grid-template-columns: minmax(0, 1fr) 3.4rem 4.6rem 5.4rem; gap: .35rem; }
@@ -52,14 +61,16 @@
 <body>
 <main class="wrap">
   <section>
-    <div class="eyebrow">Value finder</div>
+    <div class="eyebrow">Most likely vs best price</div>
     <h1 id="headline">Which bets are worth it</h1>
-    <p class="lede">Type the first basket odds your sportsbook shows for any player. The model compares them with its own chance and tells you whether the price is good. Your odds stay on this device.</p>
+    <p class="lede">The most likely player isn't always the best bet. Type the first basket odds your sportsbook shows, and each game shows two picks: the <b>most likely</b> to score first, and the <b>best price</b>, the player who pays the most compared with his real chance. Your odds stay on this device.</p>
   </section>
 
   <section class="section" id="best-section">
-    <h2>Best value you've entered</h2>
+    <h2>Best prices you've entered</h2>
     <div class="best" id="best"><div class="empty">Enter some odds below and the best prices show up here.</div></div>
+    <div class="copyrow"><button type="button" class="linkbtn" id="copy">Copy best-price post for X</button><span class="note" id="copymsg" style="margin:0"></span></div>
+    <div id="copybox"></div>
   </section>
 
   <section class="section">
@@ -122,6 +133,41 @@
     return el("div", { class: "verdict " + a.kind }, el("b", { text: `${label} ${sign(a.edge)}` }), el("span", { text: `${money(a.ev)} / $10` }));
   };
 
+  const showOdds = (raw) => (/^\d+$/.test(raw) ? "+" + raw : raw);
+
+  const postText = () => {
+    const picks = [];
+    for (const g of today.games) {
+      const rows = players.filter((p) => p.game === g).sort((a, b) => b.p - a.p);
+      let best = null, bestA = null;
+      for (const p of rows) { const a = assess(p); if (a && !a.bad && a.edge > 0 && (!bestA || a.edge > bestA.edge)) { best = p; bestA = a; } }
+      if (best) picks.push({ g, top: rows[0], best, a: bestA });
+    }
+    picks.sort((x, y) => y.a.edge - x.a.edge);
+    if (!picks.length) return null;
+    const lines = ["Most likely vs best price 🏀", "", "Full board 👉 sethb2002.github.io/theplusside", ""];
+    for (const { g, top, best } of picks.slice(0, 3)) {
+      lines.push(`${g.away} @ ${g.home}`);
+      lines.push(`🎯 Most likely: ${top.name} ${pct(top.p, 1)}`);
+      if (best === top) lines.push(`💰 Best price too, at ${showOdds(odds[best.key])} (fair ${fairOdds(best.p)})`);
+      else lines.push(`💰 Best price: ${best.name} ${showOdds(odds[best.key])} (model ${pct(best.p, 1)}, fair ${fairOdds(best.p)})`);
+      lines.push("");
+    }
+    lines.push("The most likely guy isn't always the best bet.", "", "#NBA #FirstBasket");
+    return lines.join("\n");
+  };
+
+  document.getElementById("copy").addEventListener("click", async () => {
+    const msg = document.getElementById("copymsg"), box = document.getElementById("copybox");
+    const t = postText();
+    if (!t) { msg.textContent = "Enter some odds first. No best-price picks yet."; box.replaceChildren(); return; }
+    let ok = false;
+    try { await navigator.clipboard.writeText(t); ok = true; } catch (e) { ok = false; }
+    const ta = el("textarea", { readonly: "" }); ta.value = t;
+    box.replaceChildren(ta);
+    msg.textContent = ok ? "Copied. It's also below if you want to edit it." : "Copy it from the box below.";
+  });
+
   const drawBest = () => {
     const rated = players.map((p) => ({ p, a: assess(p) })).filter((x) => x.a && !x.a.bad && x.a.edge > 0).sort((x, y) => y.a.edge - x.a.edge).slice(0, 3);
     const box = document.getElementById("best");
@@ -140,6 +186,26 @@
       const card = el("article", { class: "card vgame" },
         el("div", { class: "vgame-head" }, el("h2", { text: `${g.away} at ${g.home}` }), el("span", { text: time12(g.time_et) })),
         el("div", { class: "vrow head" }, el("span", { text: "Player" }), el("span", { class: "num", text: "Model" }), el("span", { class: "num", text: "Book odds" }), el("span", { class: "num", text: "Edge" })));
+      const sum = el("div", { class: "gsum" });
+      card.append(sum);
+      const rowEls = new Map(), tagEls = new Map();
+      const updGame = () => {
+        const top = rows[0];
+        let best = null, bestA = null;
+        for (const p of rows) { const a = assess(p); if (a && !a.bad && a.edge > 0 && (!bestA || a.edge > bestA.edge)) { best = p; bestA = a; } }
+        for (const p of rows) {
+          rowEls.get(p.key).classList.toggle("bestrow", best === p);
+          const t = [];
+          if (p === top) t.push(el("span", { class: "tag likely", text: "Most likely" }));
+          if (p === best) t.push(el("span", { class: "tag price", text: "Best price" }));
+          tagEls.get(p.key).replaceChildren(...t);
+        }
+        const kids = [el("b", { text: "Most likely: " }), `${shortName(top.name)} ${pct(top.p, 1)}`];
+        const entered = rows.some((p) => odds[p.key]);
+        if (best) kids.push(" · ", el("span", { class: "bp", text: "Best price: " }), `${shortName(best.name)} ${showOdds(odds[best.key])} (edge +${bestA.edge.toFixed(1)}, ${bestA.ev >= 0 ? "+" : "−"}$${Math.abs(bestA.ev).toFixed(2)} per $10)`);
+        else kids.push(" · ", el("span", { text: entered ? "No value in the odds you've entered" : "Enter odds to find the best price" }));
+        sum.replaceChildren(...kids);
+      };
       for (const p of rows) {
         const input = el("input", { type: "text", inputmode: "numeric", placeholder: "odds", "aria-label": `${p.name} odds`, id: `o-${p.key}` });
         input.value = odds[p.key] || "";
@@ -152,14 +218,19 @@
         input.addEventListener("input", () => {
           const v = input.value.trim();
           if (v) odds[p.key] = v; else delete odds[p.key];
-          save(); refresh(); drawBest();
+          save(); refresh(); updGame(); drawBest();
         });
         refresh();
-        card.append(el("div", { class: "vrow" },
-          el("span", { class: "name" }, TPS.playerLink(p.id, shortName(p.name)), el("small", { text: `${p.team} ${p.pos || ""}` })),
+        const tags = el("span", {});
+        tagEls.set(p.key, tags);
+        const row = el("div", { class: "vrow" },
+          el("span", { class: "name" }, TPS.playerLink(p.id, shortName(p.name)), el("small", { text: `${p.team} ${p.pos || ""}` }), tags),
           el("span", { class: "num" }, pct(p.p, 1), el("small", { text: `fair ${fairOdds(p.p)}` })),
-          input, vbox));
+          input, vbox);
+        rowEls.set(p.key, row);
+        card.append(row);
       }
+      updGame();
       return card;
     }));
     drawBest();
