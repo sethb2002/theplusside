@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>How the First Basket Picks Work | The Plus Side</title>
+<meta name="description" content="Where the data comes from and how The Plus Side estimates tip-off and first-basket chances.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="The Plus Side">
+<meta property="og:title" content="How the First Basket Picks Work">
+<meta property="og:image" content="https://sethb2002.github.io/theplusside/firstbasket/img/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<main class="wrap">
+  <article class="prose">
+    <div class="eyebrow">How it works</div>
+    <h1>How the picks work</h1>
+
+    <h2>The data</h2>
+    <p>Every regular-season game since the start of the 2025-26 season, taken from the NBA's own play-by-play: who jumped at center, which team got the ball, who scored first, and both starting lineups. New games are added every morning.</p>
+    <p>"First basket" means the first points of the game, <strong>free throws included</strong>, the way FanDuel settles its first basket bets. Some other sportsbooks, like DraftKings and BetMGM, count only the first made field goal, so check your book's rules. The two differ in about 1 game in 9.</p>
+
+    <h2>Who scores first</h2>
+    <p>The team that wins the opening tip scores the first basket about 64% of the time, so the estimate starts with the tip.</p>
+    <ol>
+      <li><strong>Tip chance.</strong> The opening tip is won by a player, so the model compares the two likely jumpers' jump-ball records, usually the starting centers. A player's record follows him to a new team. Jump records are padded with 6 jumps at 50% so a few tips don't swing them.</li>
+      <li><strong>After the tip.</strong> How often a team scores first after winning the tip and after losing it, blended with how often its opponent allows the first basket in the same situation.</li>
+      <li><strong>Small samples.</strong> Every team's record is padded with 10 games of league-average results, so one hot week doesn't swing the numbers.</li>
+    </ol>
+
+    <h2>Which player</h2>
+    <p>A player's chance is his team's chance to score first times his share of that chance among the five starters. The share is 70% shot volume (how many shots he takes per game over his last 20 games) and 30% his record of first baskets in games he started. Shot volume comes first because every game gives about 85 shots of evidence but only one first basket, and tested on 894 past games this blend picked the right player more often (28% vs 25%) and gave more honest percentages than first baskets alone. Centers get a small boost and guards and forwards a small cut, because centers score about 26% of first baskets (early dunks, tip-ins and lobs), more than their shot volume suggests.</p>
+    <p>Likely starters are the five players who started most of the team's recent games. Injuries, rest days and trades show up only once they change who starts, so check the news before tip-off.</p>
+
+    <h2>Fair odds and value</h2>
+    <p>Every pick shows its fair odds: the price that would pay exactly what the model's chance is worth. A player at 18% has fair odds of about +450. If your sportsbook offers more than the fair odds, say +600, the model thinks the bet is underpriced. The <a href="value.html">Value page</a> does this comparison for you.</p>
+    <p>Sportsbooks build a margin into first basket prices, so most players will look overpriced. That's expected; the ones that don't are the ones worth a look.</p>
+
+    <h2>The track record</h2>
+    <p>Picks are saved the morning of each game, before tip-off, and never edited. Results are graded the next morning and stay on the page, hits and misses alike.</p>
+
+    <h2>Fine print</h2>
+    <p>This is a stats project for entertainment. It isn't betting advice, and no estimate here is a guarantee. If you bet, bet only what you can afford to lose.</p>
+  </article>
+</main>
+<script src="../assets/app.js" data-page="about" data-root=".."></script>
+<script>TPS.header(); TPS.load("stats").then((s) => TPS.footer(s.updated)).catch(() => TPS.footer());</script>
+<script data-goatcounter="https://theplusside.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
+</body>
+</html>
